@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}劳务分包管理 — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}劳务分包管理{% endblock %}
+{% block content %}
+
+<style>
+    .labor-kpi-big {
+        font-size: 42px;
+        font-weight: bold;
+        line-height: 1.2;
+    }
+    .labor-kpi-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+    .labor-note {
+        background: #e8f4ff;
+        border-left: 4px solid #0d6efd;
+        padding: 12px 16px;
+        border-radius: 6px;
+        color: #0d4a9e;
+        font-size: 13px;
+    }
+    .warning-item-light {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .warning-item-light:hover {
+        background: #f8f9fa;
+    }
+</style>
+
+<div class="row g-4 mb-4">
+    <!-- 单体明细 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-building"></i> 单体明细</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>单体名称</th>
+                                <th>收入上</th>
+                                <th>预算</th>
+                                <th>翻样</th>
+                                <th>措施</th>
+                                <th>二构</th>
+                                <th>报量分</th>
+                                <th>结算下</th>
+                                <th>收支差</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in building_details %}
+                            <tr>
+                                <td><strong>{{ b.name }}</strong></td>
+                                <td>{{ b.income_upper }}</td>
+                                <td>{{ b.budget }}</td>
+                                <td>{{ b.detailing }}</td>
+                                <td>{{ b.measure }}</td>
+                                <td>{{ b.secondary }}</td>
+                                <td>{{ b.report_upper }} / {{ b.report_lower }}</td>
+                                <td>{{ b.settlement_upper }} / {{ b.settlement_lower }}</td>
+                                <td class="{% if b.diff >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(b.diff) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 盈亏罚扣 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-cash-coin"></i> 盈亏罚扣</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>分包单位</th>
+                                <th class="text-danger">累计罚扣</th>
+                                <th>预算量</th>
+                                <th>消耗量</th>
+                                <th>效益量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in profit_penalty %}
+                            <tr>
+                                <td><strong>{{ item.team }}</strong></td>
+                                <td class="text-danger">{{ "%.0f"|format(item.penalty) }}</td>
+                                <td>{{ item.budget }}</td>
+                                <td>{{ item.usage }}</td>
+                                <td class="{% if item.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "%.1f"|format(item.profit) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- 分包总结算量 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-calculator"></i> 分包总结算量</h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-around">
+                <div class="text-center">
+                    <div class="labor-kpi-label">总结算量</div>
+                    <div class="labor-kpi-big" style="color: #00d4ff;">{{ "%.1f"|format(summary.total_settlement) }}<span style="font-size:16px;color:#666;">T</span></div>
+                </div>
+                <div class="text-center">
+                    <div class="labor-kpi-label">总报量</div>
+                    <div class="labor-kpi-big" style="color: #ff7a00;">{{ "%.1f"|format(summary.total_report) }}
+                        <span style="font-size:16px;color:#666;">T</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分包报量预警 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> 分包报量预警</h6>
+                <span class="badge bg-danger">{{ warnings | length }} 项</span>
+            </div>
+            <div class="card-body">
+                {% for w in warnings %}
+                <div class="warning-item-light">
+                    <div>
+                        <div class="fw-bold">{{ w.project }} — {{ w.team }}</div>
+                        <small class="text-muted">报量 {{ w.report }}T / 结算 {{ w.settlement }}T / 差异 {{ w.diff }}T</small>
+                    </div>
+                    <span class="badge bg-{{ 'danger' if w.level == 'danger' else 'warning' }}">
+                        {{ '超报' if w.diff < 0 else '少报' }}
+                    </span>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">暂无预警</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 底部说明 -->
+<div class="labor-note">
+    <i class="bi bi-info-circle"></i>
+    说明：单体明细、盈亏罚扣、总结算量、报量预警等数据按当前筛选项目汇总展示，超报/少报项以红色/橙色标签标识。
+</div>
+
+{% endblock %}

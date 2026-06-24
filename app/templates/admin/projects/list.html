@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_table, render_pagination, empty_state, status_badge, confirm_delete_form, page_header %}
+{% block title %}项目列表{% endblock %}
+{% block content %}
+{{ page_header('', url_for('admin.project_create'), '新建项目', 'plus-circle', 'btn-primary') }}
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% call data_table(['项目名称', '合同名称', '甲方单位', '承接公司', '创建时间', '项目状态', '操作']) %}
+      {% if pagination.items %}
+      {% for p in pagination.items %}<tr>
+        <td>
+          <a href="{{ url_for('project.detail', project_id=p.id) }}" class="text-primary fw-semibold text-decoration-none">{{ p.name }}</a>
+        </td>
+        <td>{{ p.contract_name or '-' }}</td>
+        <td>{{ p.client_unit.name if p.client_unit else '-' }}</td>
+        <td>{{ p.contractor.name if p.contractor else '-' }}</td>
+        <td>{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '-' }}</td>
+        <td>{{ status_badge(p.status, PROJECT_STATUS_MAP) }}</td>
+        <td>
+          <a href="{{ url_for('project.detail', project_id=p.id) }}" class="btn btn-sm btn-outline-primary me-1" aria-label="查看详情" title="查看详情">
+            <i class="bi bi-eye"></i> 查看详情
+          </a>
+          <button type="button" class="btn btn-sm btn-outline-secondary btn-edit-project"
+                  data-id="{{ p.id }}"
+                  data-name="{{ p.name }}"
+                  data-contract-name="{{ p.contract_name or '' }}"
+                  data-client-unit-id="{{ p.client_unit_id or 0 }}"
+                  data-contractor-id="{{ p.contractor_id or 0 }}"
+                  data-description="{{ p.description or '' }}"
+                  data-status="{{ p.status }}"
+                  data-start-date="{{ p.start_date.strftime('%Y-%m-%d') if p.start_date else '' }}"
+                  data-duration="{{ p.duration_days or '' }}"
+                  data-building-area="{{ p.building_area or '' }}"
+                  data-rebar-content="{{ p.rebar_content or '' }}"
+                  data-bs-toggle="modal" data-bs-target="#editProjectModal">
+            <i class="bi bi-pencil"></i> 编辑
+          </button>
+        </td>
+      </tr>{% endfor %}
+      {% else %}
+      <tr><td colspan="7">{{ empty_state('inbox', '暂无项目') }}</td></tr>
+      {% endif %}
+    {% endcall %}
+  </div>
+  <div class="card-footer bg-white">{{ render_pagination(pagination, 'admin.project_list') }}</div>
+</div>
+
+<!-- 编辑项目 Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" id="editProjectForm">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-pencil"></i> 编辑项目</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">项目名称 <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" id="editProjectName" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">合同名称</label>
+              <input type="text" name="contract_name" class="form-control" id="editProjectContractName">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">甲方单位</label>
+              <select name="client_unit_id" class="form-select" id="editProjectClient">
+                <option value="0">-- 不选择 --</option>
+                {% for c in clients %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">承接公司</label>
+              <select name="contractor_id" class="form-select" id="editProjectContractor">
+                <option value="0">-- 不选择 --</option>
+                {% for ct in contractors %}
+                <option value="{{ ct.id }}">{{ ct.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">开工日期</label>
+              <input type="date" name="start_date" class="form-control" id="editProjectStartDate">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">总工期(天)</label>
+              <input type="number" name="duration_days" class="form-control" id="editProjectDuration">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">建筑面积(m²)</label>
+              <input type="number" step="0.01" name="building_area" class="form-control" id="editProjectBuildingArea">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">钢筋含量(kg/m²)</label>
+              <input type="number" step="0.001" name="rebar_content" class="form-control" id="editProjectRebarContent">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">项目状态</label>
+              <select name="status" class="form-select" id="editProjectStatus">
+                <option value="active">活跃</option>
+                <option value="archived">已归档</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label class="form-label">项目描述</label>
+            <textarea name="description" class="form-control" rows="3" id="editProjectDescription"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    var editButtons = document.querySelectorAll('.btn-edit-project');
+    var form = document.getElementById('editProjectForm');
+
+    editButtons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var projectId = this.getAttribute('data-id');
+            form.action = '/admin/projects/' + projectId + '/edit';
+
+            document.getElementById('editProjectName').value = this.getAttribute('data-name');
+            document.getElementById('editProjectContractName').value = this.getAttribute('data-contract-name');
+            document.getElementById('editProjectClient').value = this.getAttribute('data-client-unit-id');
+            document.getElementById('editProjectContractor').value = this.getAttribute('data-contractor-id');
+            document.getElementById('editProjectDescription').value = this.getAttribute('data-description');
+            document.getElementById('editProjectStatus').value = this.getAttribute('data-status');
+            document.getElementById('editProjectStartDate').value = this.getAttribute('data-start-date');
+            document.getElementById('editProjectDuration').value = this.getAttribute('data-duration');
+            document.getElementById('editProjectBuildingArea').value = this.getAttribute('data-building-area');
+            document.getElementById('editProjectRebarContent').value = this.getAttribute('data-rebar-content');
+        });
+    });
+})();
+</script>
+{% endblock %}

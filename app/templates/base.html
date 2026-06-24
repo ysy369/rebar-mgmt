@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}钢筋精细化管理平台{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% from "_macros.html" import render_breadcrumb %}
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- ========== 侧边栏 ========== -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="bi bi-box-seam-fill"></i>
+                <span class="brand-text">钢筋管理平台</span>
+            </div>
+
+            <ul class="sidebar-menu" id="sidebarMenu"
+                data-menu-context="{% if current_project %}project{% else %}global{% endif %}"
+                data-project-id="{{ current_project.id if current_project else '' }}">
+
+                {% if current_user.is_authenticated %}
+                    {% set ep = request.endpoint or '' %}
+
+                    <!-- 首页 -->
+                    <li class="menu-group no-children {% if ep == 'home.index' %}active{% endif %}">
+                        <a href="{{ url_for('home.index') }}" class="menu-toggle menu-link">
+                            <span class="menu-label"><i class="bi bi-house-door"></i> 首页</span>
+                        </a>
+                    </li>
+
+                    <!-- 项目数据看板（一级菜单） -->
+                    <li class="menu-group no-children {% if ep == 'project.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('project.dashboard') }}" class="menu-toggle menu-link" target="_blank">
+                            <span class="menu-label"><i class="bi bi-bar-chart-line"></i> 项目数据看板</span>
+                        </a>
+                    </li>
+
+                    <!-- 劳务分包管理（一级菜单） -->
+                    <li class="menu-group no-children {% if ep == 'labor.index' %}active{% endif %}">
+                        <a href="{{ url_for('labor.index') }}" class="menu-toggle menu-link" target="_blank">
+                            <span class="menu-label"><i class="bi bi-people"></i> 劳务分包管理</span>
+                        </a>
+                    </li>
+
+                    <!-- 项目管理 -->
+                    <li class="menu-group no-children {% if ep == 'project.project_overview' %}active{% endif %}">
+                        <a href="{{ url_for('project.project_overview') }}" class="menu-toggle menu-link">
+                            <span class="menu-label"><i class="bi bi-folder"></i> 项目管理</span>
+                        </a>
+                    </li>
+
+                    <!-- 文件管理 -->
+                    <li class="menu-group {% if active_menu == 'file_management' %}expanded active{% endif %}"
+                        data-menu-key="file_management">
+                        <div class="menu-toggle" onclick="toggleMenu(this)">
+                            <span class="menu-label"><i class="bi bi-files"></i> 文件管理</span>
+                            <span class="menu-arrow">▶</span>
+                        </div>
+                        <ul class="submenu">
+                            <li><a href="{{ url_for('project.import_file', type='incoming') }}"
+                                   class="{% if ep == 'project.import_file' %}active{% endif %}">文件导入</a></li>
+                            <li><a href="{{ url_for('project.model_sheet') }}"
+                                   class="{% if ep == 'project.model_sheet' %}active{% endif %}">钢筋模型表</a></li>
+                            <li><a href="{{ url_for('project.entry_sheet') }}"
+                                   class="{% if ep == 'project.entry_sheet' %}active{% endif %}">钢筋进场表</a></li>
+                            <li><a href="{{ url_for('project.transfer_sheet') }}"
+                                   class="{% if ep == 'project.transfer_sheet' %}active{% endif %}">调拨钢筋表</a></li>
+                            <li><a href="{{ url_for('project.waste_sheet') }}"
+                                   class="{% if ep == 'project.waste_sheet' %}active{% endif %}">废料钢筋表</a></li>
+                            <li><a href="{{ url_for('project.remaining_sheet') }}"
+                                   class="{% if ep == 'project.remaining_sheet' %}active{% endif %}">钢筋剩余表</a></li>
+                            <li><a href="{{ url_for('project.secondary_sheet') }}"
+                                   class="{% if ep == 'project.secondary_sheet' %}active{% endif %}">钢筋二构表</a></li>
+                            <li><a href="{{ url_for('project.detailing_sheet') }}"
+                                   class="{% if ep == 'project.detailing_sheet' %}active{% endif %}">钢筋翻样表</a></li>
+                            <li><a href="{{ url_for('project.pile_foundation_sheet') }}"
+                                   class="{% if ep == 'project.pile_foundation_sheet' %}active{% endif %}">主体桩基表</a></li>
+                            <li><a href="{{ url_for('project.support_structure_sheet') }}"
+                                   class="{% if ep == 'project.support_structure_sheet' %}active{% endif %}">基坑支护表</a></li>
+                            <li><a href="{{ url_for('project.non_budget_sheet') }}"
+                                   class="{% if ep == 'project.non_budget_sheet' %}active{% endif %}">非预算收入使用钢筋表</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 审核与分析 -->
+                    <li class="menu-group {% if active_menu == 'audit' %}expanded active{% endif %}"
+                        data-menu-key="audit">
+                        <div class="menu-toggle" onclick="toggleMenu(this)">
+                            <span class="menu-label"><i class="bi bi-check2-square"></i> 审核与分析</span>
+                            <span class="menu-arrow">▶</span>
+                        </div>
+                        <ul class="submenu">
+                            <li><a href="{{ url_for('audit.profit_loss') }}"
+                                   class="{% if ep == 'audit.profit_loss' %}active{% endif %}">盈亏分析</a></li>
+                            <li><a href="{{ url_for('audit.data_dynamic') }}"
+                                   class="{% if ep == 'audit.data_dynamic' %}active{% endif %}">数据动态管理分析</a></li>
+                            <li><a href="{{ url_for('audit.procurement_plan') }}"
+                                   class="{% if ep == 'audit.procurement_plan' %}active{% endif %}">钢筋采购计划</a></li>
+                            <li class="menu-group {% if active_menu == 'audit_comparison' %}expanded active{% endif %}"
+                                data-menu-key="audit_comparison">
+                                <div class="menu-toggle" onclick="toggleMenu(this)">
+                                    <span class="menu-label"><i class="bi bi-calculator"></i> 钢筋对比测算</span>
+                                    <span class="menu-arrow">▶</span>
+                                </div>
+                                <ul class="submenu">
+                                    <li><a href="{{ url_for('audit.comparison_calc', category='coil') }}"
+                                           class="{% if request.args.get('category') == 'coil' %}active{% endif %}">盘螺对比</a></li>
+                                    <li><a href="{{ url_for('audit.comparison_calc', category='fixed') }}"
+                                           class="{% if request.args.get('category') == 'fixed' %}active{% endif %}">定尺余料对比</a></li>
+                                    <li><a href="{{ url_for('audit.comparison_calc', category='threshold') }}"
+                                           class="{% if request.args.get('category') == 'threshold' %}active{% endif %}">余料临界值</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- 现场管理 -->
+                    <li class="menu-group {% if active_menu == 'site' %}expanded active{% endif %}"
+                        data-menu-key="site">
+                        <div class="menu-toggle" onclick="toggleMenu(this)">
+                            <span class="menu-label"><i class="bi bi-cone-striped"></i> 现场管理</span>
+                            <span class="menu-arrow">▶</span>
+                        </div>
+                        <ul class="submenu">
+                            <li><a href="{{ url_for('site.visual_progress') }}"
+                                   class="{% if ep == 'site.visual_progress' %}active{% endif %}">形象进度</a></li>
+                            <li><a href="{{ url_for('site.material_issue') }}"
+                                   class="{% if ep == 'site.material_issue' %}active{% endif %}">钢筋物资领用</a></li>
+                            <li><a href="{{ url_for('site.inspection') }}"
+                                   class="{% if ep == 'site.inspection' %}active{% endif %}">巡检管理</a></li>
+                            <li><a href="{{ url_for('site.rebar_replacement') }}"
+                                   class="{% if ep == 'site.rebar_replacement' %}active{% endif %}">钢筋代换</a></li>
+                            <li><a href="{{ url_for('site.optimization_ledger') }}"
+                                   class="{% if ep == 'site.optimization_ledger' %}active{% endif %}">钢筋优化台账</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- 工作管理 -->
+                    <li class="menu-group no-children {% if ep == 'work.index' %}active{% endif %}">
+                        <a href="{{ url_for('work.index') }}" class="menu-toggle menu-link">
+                            <span class="menu-label"><i class="bi bi-clipboard-check"></i> 工作管理</span>
+                        </a>
+                    </li>
+
+                    <!-- 系统设置 -->
+                    <li class="menu-group {% if active_menu == 'system' %}expanded active{% endif %}"
+                        data-menu-key="system">
+                        <div class="menu-toggle" onclick="toggleMenu(this)">
+                            <span class="menu-label"><i class="bi bi-gear"></i> 系统设置</span>
+                            <span class="menu-arrow">▶</span>
+                        </div>
+                        <ul class="submenu">
+                            <li><a href="{{ url_for('system.user_list') }}"
+                                   class="{% if ep in ('system.user_list','system.user_create','system.user_edit') %}active{% endif %}">用户管理</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+
+            <div class="sidebar-footer">
+                {% if current_user.is_authenticated %}
+                    <div class="user-info">
+                        <i class="bi bi-person-circle"></i>
+                        <span>{{ current_user.display_name }}</span>
+                        <span class="badge bg-{% if current_user.is_admin %}warning{% else %}info{% endif %} ms-1" style="font-size:0.7rem;">
+                            {{ '管理员' if current_user.is_admin else '工程师' }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+        </nav>
+
+        <!-- ========== 主内容区 ========== -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <header class="topbar">
+                <button class="btn btn-link sidebar-toggle" id="sidebarToggle" title="折叠菜单">
+                    <i class="bi bi-list"></i>
+                </button>
+                <div class="topbar-title">
+                    {% block page_title %}{{ page_title|default('') }}{% endblock %}
+                </div>
+                <div class="topbar-actions">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-box-arrow-right"></i> 退出
+                        </a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <!-- Flash 消息 -->
+            <div class="px-4 pt-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- 面包屑与页面大标题 -->
+            {% block page_header %}
+            <div class="page-header-area px-4 pt-2">
+                {% if breadcrumbs %}
+                    {{ render_breadcrumb(breadcrumbs) }}
+                {% endif %}
+                {% if page_title|default('') %}
+                    <h4 class="page-main-title">{{ page_title }}</h4>
+                {% endif %}
+            </div>
+            {% endblock %}
+
+            <!-- 页面内容 -->
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 统一图表封装 -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <!-- 自定义 JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

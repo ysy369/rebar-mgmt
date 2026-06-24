@@ -1,0 +1,218 @@
+{# ============================================
+   钢筋精细化管理平台 — 统一 UI 宏库
+   用法：{% from "_macros.html" import stat_card, status_badge, data_table,
+          render_pagination, empty_state, chart_card, confirm_delete_form,
+          render_breadcrumb, render_sidebar_menus %}
+   ============================================ #}
+
+{# ---------- 统计卡片 ---------- #}
+{% macro stat_card(title, value, icon, color='primary', subtitle=None, border=False) %}
+<div class="card border-0 shadow-sm {% if border %}stat-card-border-{{ color }}{% endif %} h-100">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <small class="text-muted">{{ title }}</small>
+                <div class="fs-3 fw-bold text-dark mt-1">{{ value }}</div>
+                {% if subtitle %}<small class="text-muted">{{ subtitle }}</small>{% endif %}
+            </div>
+            <div class="rounded-circle bg-{{ color }} bg-opacity-10 p-2">
+                <i class="bi bi-{{ icon }} fs-5 text-{{ color }}"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# ---------- 小型统计卡片（居中） ---------- #}
+{% macro stat_card_small(title, value, color='primary') %}
+<div class="card border-0 shadow-sm text-center py-3 h-100">
+    <small class="text-muted">{{ title }}</small>
+    <div class="fs-3 fw-bold text-{{ color }}">{{ value }}</div>
+</div>
+{% endmacro %}
+
+{# ---------- 状态徽章 ---------- #}
+{% macro status_badge(status, mapping) %}
+{% set info = mapping.get(status, {'label': status, 'color': 'secondary'}) %}
+<span class="badge bg-{{ info.color }}">{{ info.label }}</span>
+{% endmacro %}
+
+{# ---------- 通用表格容器 ---------- #}
+{% macro data_table(headers) %}
+<div class="table-responsive">
+    <table class="table table-hover mb-0 small">
+        <thead class="table-light">
+            <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+            {{ caller() }}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
+
+{# ---------- 空状态 ---------- #}
+{% macro empty_state(icon='inbox', text='暂无数据', subtext=None, action_url=None, action_text=None) %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-{{ icon }}" style="font-size:3rem;"></i>
+    <p class="mt-2 mb-1">{{ text }}</p>
+    {% if subtext %}<p class="small">{{ subtext }}</p>{% endif %}
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="btn btn-sm btn-outline-primary mt-2">{{ action_text }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# ---------- 分页导航 ---------- #}
+{% macro render_pagination(pagination_obj, endpoint, args=None) %}
+{% if pagination_obj and pagination_obj.pages > 1 %}
+{% set args = args or request.args.to_dict() %}
+{% set _ = args.pop('page', None) %}
+<nav aria-label="分页">
+    <ul class="render_pagination pagination-sm justify-content-center mt-3 mb-0">
+        <li class="page-item {% if not pagination_obj.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{% if pagination_obj.has_prev %}{{ url_for(endpoint, page=pagination_obj.prev_num, **args) }}{% else %}#{% endif %}">上一页</a>
+        </li>
+        {% for p in pagination_obj.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                {% if p == pagination_obj.page %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ p }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="{{ url_for(endpoint, page=p, **args) }}">{{ p }}</a></li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not pagination_obj.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{% if pagination_obj.has_next %}{{ url_for(endpoint, page=pagination_obj.next_num, **args) }}{% else %}#{% endif %}">下一页</a>
+        </li>
+    </ul>
+    <div class="text-center small text-muted mt-1">共 {{ pagination_obj.total }} 条，{{ pagination_obj.pages }} 页</div>
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# ---------- 图表卡片 ---------- #}
+{% macro chart_card(title, canvas_id, height=220, icon='bar-chart') %}
+<div class="card border-0 shadow-sm h-100">
+    <div class="card-header bg-white border-bottom-0">
+        <h6 class="mb-0"><i class="bi bi-{{ icon }}"></i> {{ title }}</h6>
+    </div>
+    <div class="card-body d-flex align-items-center justify-content-center" style="height:{{ height }}px;">
+        <canvas id="{{ canvas_id }}"></canvas>
+    </div>
+</div>
+{% endmacro %}
+
+{# ---------- 面包屑导航 ---------- #}
+{% macro render_breadcrumb(items) %}
+{% if items %}
+<nav aria-label="breadcrumb" class="breadcrumb-nav mb-2">
+    <ol class="breadcrumb breadcrumb-custom mb-0">
+        {% for item in items %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}" {% if loop.last %}aria-current="page"{% endif %}>
+            {% if item.url and not loop.last %}
+            <a href="{{ item.url }}" class="text-decoration-none breadcrumb-link">{{ item.name }}</a>
+            {% else %}
+            <span class="{% if loop.last %}fw-semibold breadcrumb-current{% else %}text-secondary{% endif %}">{{ item.name }}</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# ---------- 侧边栏层级菜单 ---------- #}
+{% macro render_sidebar_menus(menus) %}
+{% for menu in menus %}
+    {% if menu.visible | default(true) %}
+        {% if menu.children %}
+            {% set has_active = menu.children | selectattr('active') | list | length > 0 %}
+            <li class="menu-group {% if has_active %}expanded{% endif %}">
+                <div class="menu-toggle" onclick="toggleMenu(this)">
+                    <span class="menu-text"><i class="bi bi-{{ menu.icon }}"></i> {{ menu.name }}</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div class="submenu">
+                    {% for child in menu.children %}
+                        {% if child.visible | default(true) %}
+                        <a href="{{ child.url }}" class="{% if child.active %}active{% endif %}">{{ child.name }}</a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </li>
+        {% else %}
+            <li class="menu-group no-children">
+                <a href="{{ menu.url }}" class="menu-toggle menu-link {% if menu.active %}active{% endif %}">
+                    <span class="menu-text"><i class="bi bi-{{ menu.icon }}"></i> {{ menu.name }}</span>
+                </a>
+            </li>
+        {% endif %}
+    {% endif %}
+{% endfor %}
+{% endmacro %}
+
+{% macro confirm_delete_form(action_url, button_class='btn-outline-danger', button_size='sm', icon='trash', message='确定删除？') %}
+<form method="POST" action="{{ action_url }}" style="display:inline" class="confirm-delete-form" data-message="{{ message }}">
+    <button type="submit" class="btn btn-{{ button_size }} {{ button_class }}" aria-label="删除" title="删除">
+        <i class="bi bi-{{ icon }}"></i>
+    </button>
+</form>
+{% endmacro %}
+
+{# ---------- 页面标题区 ---------- #}
+{% macro page_header(title, action_url=None, action_text=None, action_icon='plus-circle', action_class='btn-primary') %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="mb-0">{{ title }}</h5>
+    {% if action_url and action_text %}
+    <a href="{{ action_url }}" class="btn btn-sm {{ action_class }}">
+        <i class="bi bi-{{ action_icon }}"></i> {{ action_text }}
+    </a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# ---------- 筛选重置按钮 ---------- #}
+{% macro filter_reset_button(url='?') %}
+<a href="{{ url }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> 重置</a>
+{% endmacro %}
+
+{# ---------- 卡片式表格容器 ---------- #}
+{% macro card_table(title, badge_text=None) %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">{% if title %}<i class="bi bi-table"></i> {{ title }}{% endif %}</h6>
+        {% if badge_text %}<small class="text-muted">{{ badge_text }}</small>{% endif %}
+    </div>
+    <div class="card-body p-0">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{# ---------- 日期范围筛选（ledger 通用） ---------- #}
+{% macro period_select(name, options, selected=None, label='对账周期', auto_submit=True) %}
+<div class="col-auto">
+    <label class="form-label small mb-0">{{ label }}</label>
+    <select name="{{ name }}" class="form-select form-select-sm" {% if auto_submit %}onchange="this.form.submit()"{% endif %}>
+        <option value="">全部</option>
+        {% for value, text in options %}
+        <option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ text }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+
+{# ---------- 单位切换 ---------- #}
+{% macro unit_select(selected='T', options=[('T','吨(T)'),('kg','公斤(kg)')], auto_submit=True) %}
+<div class="col-auto">
+    <label class="form-label small mb-0">单位</label>
+    <select name="unit" class="form-select form-select-sm" {% if auto_submit %}onchange="this.form.submit()"{% endif %}>
+        {% for value, text in options %}
+        <option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ text }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}

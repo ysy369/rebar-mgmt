@@ -1,0 +1,24 @@
+{% extends "ledger/base_ledger.html" %}
+{% from "_macros.html" import data_table, empty_state, status_badge %}
+{% set title = "措施筋台账" %}{% set import_type = "measure" %}{% set total_label = "措施筋总量" %}{% set unit_label = "吨(T)" if unit=='T' else "公斤(kg)" %}
+{% block table %}
+{% call data_table(['日期', '编号', '使用单位', '工种', '部位', '用途', 'HRB400', 'HPB300', '重量', '类别', '签单人']) %}
+    {% if items %}
+    {% for i in items %}<tr>
+        <td>{{ i.date.strftime('%Y-%m-%d') if i.date else '-' }}</td>
+        <td>{{ i.seq_no or '-' }}</td>
+        <td>{{ i.unit_name or '-' }}</td>
+        <td>{{ i.work_type or '-' }}</td>
+        <td class="small">{{ i.use_location or '-' }}</td>
+        <td>{{ i.usage_purpose or '-' }}</td>
+        <td>{{ i.spec_hrb400 or '-' }}</td>
+        <td>{{ i.spec_hpb300 or '-' }}</td>
+        <td class="text-end fw-bold">{{ i.display_w | format_ton if unit=='T' else i.display_w | format_kg }}</td>
+        <td>{{ status_badge(i.category, MEASURE_CATEGORY_MAP) }}</td>
+        <td>{{ i.signer_name or '-' }}</td>
+    </tr>{% endfor %}
+    {% else %}
+    <tr><td colspan="11">{{ empty_state('inbox', '暂无措施筋记录') }}</td></tr>
+    {% endif %}
+{% endcall %}
+{% endblock %}

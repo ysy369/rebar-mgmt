@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_table, render_pagination, empty_state, status_badge, page_header %}
+{% block title %}料单审核台账{% endblock %}
+{% block page_title %}料单审核台账{% endblock %}
+{% block content %}
+<div class="row g-2 mb-3">
+  <div class="col-auto"><a href="?status=submitted" class="btn btn-sm btn-outline-info {% if current_status=='submitted' %}active{% endif %}">待审核</a></div>
+  <div class="col-auto"><a href="?status=reviewed" class="btn btn-sm btn-outline-warning {% if current_status=='reviewed' %}active{% endif %}">已审核</a></div>
+  <div class="col-auto"><a href="?status=approved" class="btn btn-sm btn-outline-success {% if current_status=='approved' %}active{% endif %}">已通过</a></div>
+  <div class="col-auto"><a href="?status=rejected" class="btn btn-sm btn-outline-danger {% if current_status=='rejected' %}active{% endif %}">已驳回</a></div>
+  <div class="col-auto"><a href="?" class="btn btn-sm btn-outline-secondary">全部</a></div>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% call data_table(['料单号', '项目', '日期', '总根数', '总重(T)', '状态', '操作']) %}
+      {% if pagination.items %}
+      {% for o in pagination.items %}<tr>
+        <td>{{ o.order_no }}</td>
+        <td>{{ o.project.name }}</td>
+        <td>{{ o.order_date.strftime('%Y-%m-%d') if o.order_date else '-' }}</td>
+        <td>{{ o.total_pieces or 0 }}</td>
+        <td>{{ o.total_weight | format_ton(3) }}</td>
+        <td>{{ status_badge(o.status, CUTTING_ORDER_STATUS_MAP) }}</td>
+        <td><a href="{{ url_for('admin.cutting_order_detail', order_id=o.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> 审核</a></td>
+      </tr>{% endfor %}
+      {% else %}
+      <tr><td colspan="7">{{ empty_state('inbox', '暂无料单') }}</td></tr>
+      {% endif %}
+    {% endcall %}
+  </div>
+  <div class="card-footer bg-white">{{ render_pagination(pagination, 'admin.cutting_order_list') }}</div>
+</div>
+{% endblock %}

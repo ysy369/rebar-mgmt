@@ -1,0 +1,165 @@
+<!-- Tab1: 项目概况 -->
+<div class="row g-4">
+    <!-- 基础信息 -->
+    <div class="col-12">
+        <div class="info-card">
+            <h5 class="mb-4"><i class="bi bi-info-circle"></i> 基础信息</h5>
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="info-label">总包单位名称</span>
+                    <span class="info-value">{{ project.total_contractor_name or '-' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">承接公司名称</span>
+                    <span class="info-value">{{ overview.contractor_name }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="info-label">合同名称</span>
+                    <span class="info-value">{{ project.contract_name or '-' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">合同编号</span>
+                    <span class="info-value">{{ project.contract_no or '-' }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="info-label">工程名称</span>
+                    <span class="info-value">{{ project.project_name or project.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">项目状态</span>
+                    <span class="info-value">{{ status_badge(project.status, PROJECT_STATUS_MAP) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工程概况 -->
+    <div class="col-12">
+        <div class="info-card">
+            <h5 class="mb-4"><i class="bi bi-building"></i> 工程概况</h5>
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="info-label">预估钢筋总量</span>
+                    <span class="info-value">{{ project.est_rebar_total ~ ' T' if project.est_rebar_total else '-' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">建筑面积</span>
+                    <span class="info-value">{{ project.building_area ~ ' m²' if project.building_area else '-' }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item" style="flex:1 1 100%;">
+                    <span class="info-label">工程地点</span>
+                    <span class="info-value">{{ project.project_location or '-' }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item" style="flex:1 1 100%;flex-direction:column;align-items:flex-start;gap:6px;">
+                    <span class="info-label">服务范围</span>
+                    <span class="info-value" style="font-weight:400;line-height:1.6;">{{ project.service_scope or '-' }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item" style="flex:1 1 100%;flex-direction:column;align-items:flex-start;gap:6px;">
+                    <span class="info-label">服务内容</span>
+                    <span class="info-value" style="font-weight:400;line-height:1.6;">{{ project.service_content or '-' }}</span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="info-label">服务工期</span>
+                    <span class="info-value">{{ project.service_duration ~ ' 天' if project.service_duration else '-' }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">总工期</span>
+                    <span class="info-value">{{ project.duration_days ~ ' 天' if project.duration_days else '-' }}</span>
+                </div>
+            </div>
+            {% if project.description %}
+            <div class="info-row" style="margin-bottom:0;">
+                <div class="info-item" style="flex:1 1 100%;flex-direction:column;align-items:flex-start;gap:6px;">
+                    <span class="info-label">项目描述</span>
+                    <span class="info-value" style="font-weight:400;line-height:1.6;">{{ project.description }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 左侧：效果图 -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-images"></i> 项目效果图</h5>
+                <a href="{{ url_for('project.attachments', project_id=project.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-gear"></i> 管理效果图</a>
+            </div>
+            <div class="card-body">
+                {% if overview.cover %}
+                <img src="{{ url_for('project.attachment_file', project_id=project.id, att_id=overview.cover.id) }}"
+                     class="cover-image mb-3" alt="项目封面">
+                {% else %}
+                <div class="cover-image d-flex align-items-center justify-content-center text-muted mb-3">
+                    <div class="text-center">
+                        <i class="bi bi-image" style="font-size:3rem;"></i>
+                        <p class="mt-2 mb-0">暂无封面图</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if overview.attachments %}
+                <div class="row g-2">
+                    {% for att in overview.attachments %}
+                    <div class="col-4 col-md-3">
+                        <div class="position-relative">
+                            <img src="{{ url_for('project.attachment_file', project_id=project.id, att_id=att.id) }}"
+                                 class="attachment-thumb w-100" alt="{{ att.file_name }}">
+                            {% if att.is_cover %}
+                            <span class="position-absolute top-0 start-0 badge bg-warning text-dark m-1">封面</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">暂无效果图，请在“管理效果图”页面上传。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：快捷统计 -->
+    <div class="col-lg-5">
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="summary-card text-center">
+                    <div class="title">进场总量</div>
+                    <div class="value">{{ overview.stats.incoming_total | format_ton(1) }}</div>
+                    <div class="text-muted small">T</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="summary-card text-center">
+                    <div class="title">消耗总量</div>
+                    <div class="value">{{ overview.stats.usage_total | format_ton(1) }}</div>
+                    <div class="text-muted small">T</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="summary-card text-center">
+                    <div class="title">结余率</div>
+                    <div class="value {{ 'text-success' if overview.stats.balance_rate >= 0 else 'text-danger' }}">{{ overview.stats.balance_rate | format_percent(1) }}%</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="summary-card text-center">
+                    <div class="title">损耗率</div>
+                    <div class="value">{{ overview.stats.loss_rate | format_percent(1) }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

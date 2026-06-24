@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_table, empty_state, status_badge %}
+{% block title %}{{ building }} 形象进度 — {{ project.name }}{% endblock %}
+{% block page_title %}{{ building }} 形象进度 — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 text-center">
+        <small class="text-muted">{{ building }} — 钢筋总重</small>
+        <div class="fs-3 fw-bold text-primary">{{ total | format_kg(0) }} kg</div>
+    </div>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        {% call data_table(['楼层', '构件类型', '模型总量(kg)', '进度量(kg)', '钢筋总重(kg)', '状态', '记录日期']) %}
+            {% if items %}
+            {% for i in items %}<tr>
+                <td>{{ i.floor_name or '-' }}</td>
+                <td>{{ i.component_type or '-' }}</td>
+                <td class="text-end">{{ i.model_total | format_kg(0) }}</td>
+                <td class="text-end">{{ i.progress_qty | format_kg(0) }}</td>
+                <td class="text-end fw-bold">{{ i.total_weight | format_kg(0) }}</td>
+                <td>{{ status_badge(i.progress_status, BUILDING_PROGRESS_STATUS_MAP) }}</td>
+                <td>{{ i.record_date.strftime('%Y-%m-%d') if i.record_date else '-' }}</td>
+            </tr>{% endfor %}
+            {% else %}
+            <tr><td colspan="7">{{ empty_state('building', '暂无数据') }}</td></tr>
+            {% endif %}
+        {% endcall %}
+    </div>
+</div>
+<a href="{{ url_for('ledger.progress_view', project_id=project.id) }}" class="btn btn-outline-secondary mt-2"><i class="bi bi-arrow-left"></i> 返回总览</a>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card_small, status_badge %}
+{% block title %}{{ project.name }} — 盈亏分析{% endblock %}
+{% block page_title %}盈亏分析 — {{ project.name }}{% endblock %}
+{% block content %}
+<!-- P&L 统计卡 -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-3 col-md-6">{{ stat_card_small('节超收益(元)', pl.rebar_income | format_money, 'primary') }}</div>
+  <div class="col-lg-3 col-md-6">{{ stat_card_small('其他收入(元)', pl.other_income | format_money, 'info') }}</div>
+  <div class="col-lg-3 col-md-6">{{ stat_card_small('总成本(元)', pl.total_cost | format_money, 'danger') }}</div>
+  <div class="col-lg-3 col-md-6">{{ stat_card_small('净利润(元)', pl.net_profit | format_money, 'success' if pl.net_profit > 0 else 'danger') }}</div>
+</div>
+
+<div class="row g-3">
+  <!-- 定价编辑 -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0">参数设置</h5></div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('project.pl_update_price', project_id=project.id) }}" class="row g-2 align-items-end mb-3">
+          <div class="col-8"><label class="form-label">钢筋节约定价 (元/T)</label>
+            <input type="number" step="100" name="unit_price" class="form-control" value="{{ pl.rebar_unit_price or 5000 }}"></div>
+          <div class="col-4"><button type="submit" class="btn btn-primary w-100">更新定价</button></div>
+        </form>
+        <form method="POST" action="{{ url_for('project.pl_update_other_income', project_id=project.id) }}" class="row g-2 align-items-end">
+          <div class="col-8"><label class="form-label">其他收入 (元)</label>
+            <input type="number" step="100" name="other_income" class="form-control" value="{{ pl.other_income or 0 }}"></div>
+          <div class="col-4"><button type="submit" class="btn btn-outline-primary w-100">更新</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- 数据明细 -->
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0">数据明细</h5></div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tr><td>钢筋节约量</td><td class="text-end">{{ pl.rebar_saved_qty | format_ton(3) }} T</td></tr>
+          <tr><td>节约定价</td><td class="text-end">{{ pl.rebar_unit_price | format_money }} 元/T</td></tr>
+          <tr class="table-primary"><td><strong>节超收益</strong></td><td class="text-end"><strong>{{ pl.rebar_income | format_money }} 元</strong></td></tr>
+          <tr><td>其他收入</td><td class="text-end">{{ pl.other_income | format_money }} 元</td></tr>
+          <tr class="table-info"><td><strong>总收入</strong></td><td class="text-end"><strong>{{ pl.total_income | format_money }} 元</strong></td></tr>
+          <tr><td>总成本</td><td class="text-end">{{ pl.total_cost | format_money }} 元</td></tr>
+          <tr class="table-{{ 'success' if pl.net_profit > 0 else 'danger' }}"><td><strong>净利润</strong></td><td class="text-end"><strong>{{ pl.net_profit | format_money }} 元</strong></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

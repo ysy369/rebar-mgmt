@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pagination, empty_state, confirm_delete_form %}
+{% block title %}{{ page_title }} — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+
+<!-- 标题区 + 搜索 + 上传 -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label small">文件名搜索</label>
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="输入文件名关键词" value="{{ search or '' }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary">重置</a>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="{{ url_for('project.import_file', type=ledger_type) }}" class="btn btn-success">
+                    <i class="bi bi-upload"></i> 上传文件
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 文件列表 -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        {% if pagination.items %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>文件名</th>
+                        <th>所属项目</th>
+                        <th>上传时间</th>
+                        <th>文件大小</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in pagination.items %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-file-earmark-excel text-success"></i>
+                            <strong class="ms-1">{{ f.original_filename }}</strong>
+                        </td>
+                        <td>{{ f.project.name if f.project else '-' }}</td>
+                        <td>{{ f.uploaded_at.strftime('%Y-%m-%d %H:%M') if f.uploaded_at else '-' }}</td>
+                        <td>
+                            {% if f.file_size %}
+                                {% if f.file_size > 1024*1024 %}
+                                    {{ "%.2f"|format(f.file_size / (1024*1024)) }} MB
+                                {% else %}
+                                    {{ "%.1f"|format(f.file_size / 1024) }} KB
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('project.imported_file_download', file_id=f.id) }}" class="btn btn-sm btn-outline-primary" title="下载">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            {{ confirm_delete_form(url_for('project.imported_file_delete', file_id=f.id), message='确定删除该文件吗？') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white">{{ render_pagination(pagination, request.endpoint) }}</div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-folder2-open" style="font-size: 3rem;"></i>
+            <h5 class="mt-3">暂无文件</h5>
+            <p class="small">请点击右上角「上传文件」按钮导入 Excel。</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

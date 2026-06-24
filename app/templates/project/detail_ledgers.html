@@ -1,0 +1,100 @@
+<!-- Tab3: 数据台账 -->
+<div class="row g-4">
+    <!-- 进场台账 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-box-arrow-in-right"></i> 进场台账</div>
+                    <div class="value">{{ ledger_summary.incoming.weight | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+                    <div class="text-muted small">{{ ledger_summary.incoming.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.incoming_list', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 调拨台账 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-arrow-left-right"></i> 调拨台账</div>
+                    <div class="value">{{ ledger_summary.transfer.weight | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+                    <div class="text-muted small">{{ ledger_summary.transfer.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.transfer_list', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 措施筋台账 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-rulers"></i> 措施筋台账</div>
+                    <div class="value">{{ ledger_summary.measure.weight_kg | format_kg(1) }}<span class="fs-6 text-muted fw-normal ms-1">kg</span></div>
+                    <div class="text-muted small">{{ ledger_summary.measure.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.measure_list', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 盘点台账 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-clipboard-check"></i> 盘点台账</div>
+                    <div class="value">{{ ledger_summary.inventory.weight | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+                    <div class="text-muted small">{{ ledger_summary.inventory.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.inventory_list', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 废料台账 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-trash"></i> 废料台账</div>
+                    <div class="value">{{ ledger_summary.waste.weight | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+                    <div class="text-muted small">{{ ledger_summary.waste.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.waste_list', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 形象进度 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-building"></i> 形象进度</div>
+                    <div class="value">{{ ledger_summary.progress.progress_rate | format_percent(1) }}%</div>
+                    <div class="text-muted small">{{ ledger_summary.progress.building_count }} 楼栋 / {{ ledger_summary.progress.count }} 条记录</div>
+                </div>
+                <a href="{{ url_for('ledger.progress_view', project_id=project.id) }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配料单 -->
+    <div class="col-xl-4 col-md-6">
+        <div class="summary-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="title"><i class="bi bi-file-earmark-spreadsheet"></i> 配料单</div>
+                    <div class="value">{{ ledger_summary.bom.count }}<span class="fs-6 text-muted fw-normal ms-1">构件</span></div>
+                    <div class="text-muted small">已浇筑 {{ ledger_summary.bom.poured_count }} / 总重 {{ ledger_summary.bom.tonnage | format_ton(1) }} T</div>
+                </div>
+                <a href="{{ url_for('bom.dashboard') }}" class="link">查看详情 <i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>

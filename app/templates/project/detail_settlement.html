@@ -1,0 +1,113 @@
+<!-- Tab4: 结算分析 -->
+<div class="row g-4">
+    <!-- 指标卡片 -->
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">施工图预算量</div>
+            <div class="value">{{ settlement.contract_qty | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">进场总量</div>
+            <div class="value">{{ settlement.incoming_qty | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">消耗总量</div>
+            <div class="value">{{ settlement.usage_qty | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">节约量</div>
+            <div class="value {{ 'text-success' if settlement.saved_qty >= 0 else 'text-danger' }}">{{ settlement.saved_qty | format_ton(1) }}<span class="fs-6 text-muted fw-normal ms-1">T</span></div>
+        </div>
+    </div>
+
+    <!-- 大字指标 -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="big-metric">
+                            <div class="value {{ 'text-success' if settlement.balance_rate >= 0 else 'text-danger' }}">{{ settlement.balance_rate | format_percent(1) }}%</div>
+                            <div class="label">结余率</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 border-start">
+                        <div class="big-metric">
+                            <div class="value">{{ settlement.loss_rate | format_percent(1) }}%</div>
+                            <div class="label">损耗率</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 border-start">
+                        <div class="big-metric">
+                            <div class="value {{ 'text-success' if settlement.efficiency_rate >= 0 else 'text-danger' }}">{{ settlement.efficiency_rate | format_percent(1) }}%</div>
+                            <div class="label">效益率</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出按钮 + 明细表格 -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table"></i> 结算明细</h5>
+                <a href="{{ url_for('project.settlement_export', project_id=project.id) }}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-file-earmark-excel"></i> 导出结余率分析Excel
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>台账类型</th>
+                                <th>数量/重量</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>表1 模型量（主体结构）</td>
+                                <td class="text-end">{{ settlement.model_qty | format_ton(1) }} T</td>
+                                <td>施工图模型量</td>
+                            </tr>
+                            <tr>
+                                <td>表2 措施量</td>
+                                <td class="text-end">{{ settlement.measure_qty | format_ton(1) }} T</td>
+                                <td>措施筋用量</td>
+                            </tr>
+                            <tr>
+                                <td>表3 进场量</td>
+                                <td class="text-end">{{ settlement.incoming_qty | format_ton(1) }} T</td>
+                                <td>累计进场钢材</td>
+                            </tr>
+                            <tr>
+                                <td>表4 剩余量</td>
+                                <td class="text-end">{{ settlement.inventory_qty | format_ton(1) }} T</td>
+                                <td>盘点剩余</td>
+                            </tr>
+                            <tr>
+                                <td>表5 废料量</td>
+                                <td class="text-end">{{ settlement.waste_qty | format_ton(1) }} T</td>
+                                <td>废料处理</td>
+                            </tr>
+                            <tr>
+                                <td>表6 调拨量</td>
+                                <td class="text-end">{{ settlement.transfer_qty | format_ton(1) }} T</td>
+                                <td>调出钢材</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

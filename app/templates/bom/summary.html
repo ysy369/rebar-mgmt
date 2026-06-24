@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card_small, data_table, render_pagination, chart_card, status_badge, empty_state, filter_reset_button %}
+{% block title %}{{ project.name }} — 数据汇总{% endblock %}
+{% block page_title %}数据汇总 — {{ project.name }}
+<a href="{{ url_for('bom.export_summary', project_id=project.id) }}" class="btn btn-sm btn-success ms-3"><i class="bi bi-download"></i> 导出Excel</a>
+{% endblock %}
+{% block content %}
+<!-- 统计卡片 -->
+<div class="row g-2 mb-3">
+    <div class="col-md-4">{{ stat_card_small(COMPONENT_STATUS_MAP['poured'].label ~ ' (T)', status_summary['poured'] | format_ton(3), 'success') }}</div>
+    <div class="col-md-4">{{ stat_card_small(COMPONENT_STATUS_MAP['in_progress'].label ~ ' (T)', status_summary['in_progress'] | format_ton(3), 'warning') }}</div>
+    <div class="col-md-4">{{ stat_card_small(COMPONENT_STATUS_MAP['not_started'].label ~ ' (T)', status_summary['not_started'] | format_ton(3), 'secondary') }}</div>
+</div>
+<div class="progress mb-3" style="height:24px;">
+    {% set total = status_summary.total or 1 %}
+    <div class="progress-bar bg-success" style="width:{{ (status_summary['poured']/total*100)|round(1) }}%">{{ (status_summary['poured']/total*100)|round(1) }}%</div>
+    <div class="progress-bar bg-warning" style="width:{{ (status_summary['in_progress']/total*100)|round(1) }}%">{{ (status_summary['in_progress']/total*100)|round(1) }}%</div>
+    <div class="progress-bar bg-secondary" style="width:{{ (status_summary['not_started']/total*100)|round(1) }}%">{{ (status_summary['not_started']/total*100)|round(1) }}%</div>
+</div>
+
+<!-- 图表区 -->
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">{{ chart_card('按构件类型汇总（吨）', 'pieChart', 220, 'pie-chart') }}</div>
+    <div class="col-lg-6">{{ chart_card('按楼层汇总（吨）', 'barChart', 220, 'bar-chart') }}</div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h6 class="card-title mb-0">层级导航</h6></div>
+            <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+                <ul class="list-unstyled tree-nav">
+                    <li><a href="?building_id=all" class="tree-link {% if filters.building_id == 'all' %}fw-bold{% endif %}">📁 全部</a></li>
+                    {% for b in tree %}
+                    <li class="mb-1">
+                        <a href="?building_id={{ b.id }}" class="tree-link {% if filters.building_id == b.id|string %}fw-bold text-primary{% endif %}">🏢 {{ b.name }}</a>
+                        <ul class="list-unstyled ms-3">
+                            {% for f in b.children %}
+                            <li><a href="?building_id={{ b.id }}&floor_id={{ f.id }}" class="tree-link small {% if filters.floor_id == f.id|string %}fw-bold text-primary{% endif %}">📋 {{ f.name }}</a>
+                                <ul class="list-unstyled ms-3">
+                                    {% for a in f.children %}
+                                    <li><a href="?building_id={{ b.id }}&floor_id={{ f.id }}&area_id={{ a.id }}" class="tree-link small {% if filters.area_id == a.id|string %}fw-bold text-primary{% endif %}">📍 {{ a.name }} ({{ a.children|length }})</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-9">
+        <div class="card mb-2 border-0 shadow-sm">
+            <div class="card-body py-2">
+                <form method="GET" class="row g-2 align-items-end">
+                    <input type="hidden" name="building_id" value="{{ filters.building_id }}">
+                    <input type="hidden" name="floor_id" value="{{ filters.floor_id }}">
+                    <input type="hidden" name="area_id" value="{{ filters.area_id }}">
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">构件类型</label>
+                        <select name="component_type" class="form-select form-select-sm" style="min-width:120px;">
+                            <option value="">全部类型</option>
+                            {% for t in ['column','beam','slab','wall','stair','other'] %}
+                            <option value="{{ t }}" {% if t in filters.component_types %}selected{% endif %}>{{ COMPONENT_TYPE_MAP[t].label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label small mb-0">施工状态</label>
+                        <select name="status" class="form-select form-select-sm" style="min-width:120px;">
+                            <option value="">全部状态</option>
+                            {% for s in ['not_started','in_progress','poured'] %}
+                            <option value="{{ s }}" {% if s in filters.statuses %}selected{% endif %}>{{ COMPONENT_STATUS_MAP[s].label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-primary">筛选</button>
+                        {{ filter_reset_button('?building_id=' ~ filters.building_id ~ '&floor_id=' ~ filters.floor_id ~ '&area_id=' ~ filters.area_id) }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('bom.batch_status', project_id=project.id) }}" id="batchForm" data-batch-confirm="确定将选中的 {count} 个构件更新状态？">
+            <div class="mb-2 d-flex gap-2 align-items-center flex-wrap">
+                <select name="status" class="form-select form-select-sm" style="width:auto;">
+                    <option value="">批量标记为...</option>
+                    {% for s in ['poured','in_progress','not_started'] %}
+                    <option value="{{ s }}">{{ COMPONENT_STATUS_MAP[s].label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-warning">执行</button>
+                <small class="text-muted ms-2">共 {{ components_pagination.total }} 个构件，当前页 {{ components|length }} 个</small>
+            </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    {% set active_dias = [] %}
+                    {% for dia in [6,8,10,12,14,16,18,20,22,25,28,32] %}
+                        {% if dia_summary.get(dia, 0) > 0 %}
+                            {% set active_dias = active_dias + [dia] %}
+                        {% endif %}
+                    {% endfor %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 small">
+                            <thead><tr>
+                                <th><input type="checkbox" data-check-all="comp-check" aria-label="全选"></th>
+                                <th>构件名称</th>
+                                <th>类型</th>
+                                <th>施工状态</th>
+                                {% for dia in active_dias %}<th class="text-end">{{ dia }}mm</th>{% endfor %}
+                                <th class="text-end">总重量(T)</th>
+                                <th>操作</th>
+                            </tr></thead>
+                            <tbody>
+                                {% if components %}
+                                {% for comp in components %}
+                                {% set wbd = comp.weight_by_diameter %}
+                                {% set tw = comp.total_weight %}
+                                <tr style="background:{{ '#E3F2FD' if comp.status=='poured' else '#E8F5E9' if comp.status=='in_progress' else '' }}">
+                                    <td><input type="checkbox" name="comp_ids" value="{{ comp.id }}" class="comp-check"></td>
+                                    <td>{{ comp.name }}</td>
+                                    <td>{{ status_badge(comp.component_type, COMPONENT_TYPE_MAP) }}</td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('bom.update_status', project_id=project.id, comp_id=comp.id) }}" style="display:inline">
+                                            <select name="status" class="form-select form-select-sm" style="width:100px;" onchange="this.form.submit()">
+                                                {% for s in ['not_started','in_progress','poured'] %}
+                                                <option value="{{ s }}" {% if comp.status==s %}selected{% endif %}>{{ COMPONENT_STATUS_MAP[s].label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </form>
+                                    </td>
+                                    {% for dia in active_dias %}
+                                    <td class="text-end">{{ wbd.get(dia,0) | format_ton(3) if wbd.get(dia,0) > 0 else '' }}</td>
+                                    {% endfor %}
+                                    <td class="text-end fw-bold">{{ tw | format_ton(3) }}</td>
+                                    <td><a href="{{ url_for('bom.component_detail', project_id=project.id, comp_id=comp.id) }}" class="btn btn-sm btn-outline-primary" aria-label="查看" title="查看"><i class="bi bi-eye"></i></a></td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr><td colspan="{{ 5 + active_dias|length }}">{{ empty_state('inbox', '暂无构件数据') }}</td></tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                {% set dia_weights = [] %}
+                                {% for comp in components %}
+                                {% for dia, w in comp.weight_by_diameter.items() %}
+                                {% set dia_weights = dia_weights + [{'dia': dia, 'w': w}] %}
+                                {% endfor %}
+                                {% endfor %}
+                                <tr>
+                                    <td colspan="4" class="fw-bold">合计</td>
+                                    {% for dia in active_dias %}
+                                    <td class="text-end fw-bold">{{ dia_weights | selectattr('dia','equalto', dia) | map(attribute='w') | sum | format_ton(3) }}</td>
+                                    {% endfor %}
+                                    <td class="text-end fw-bold">{{ components|sum(attribute='total_weight') | format_ton(3) }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    {{ render_pagination(components_pagination, 'bom.summary', {'project_id': project.id, 'building_id': filters.building_id, 'floor_id': filters.floor_id, 'area_id': filters.area_id}) }}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var typeCn = {{ {'column':'柱','beam':'梁','slab':'板','wall':'墙','stair':'楼梯','other':'其他'} | tojson }};
+    var typeData = {{ type_summary | tojson }};
+    var pieLabels = Object.keys(typeData).map(function(k){ return typeCn[k] || k; });
+    var pieValues = Object.values(typeData);
+    if (pieValues.length === 0) { pieLabels = ['暂无数据']; pieValues = [1]; }
+    RebarCharts.renderPieChart('pieChart', pieLabels, pieValues, { title: '按构件类型汇总（吨）', suffix: ' 吨' });
+
+    var floorData = {{ floor_summary | tojson }};
+    RebarCharts.renderBarChart('barChart', Object.keys(floorData), [{
+        label: '重量(吨)',
+        data: Object.values(floorData),
+        backgroundColor: '#1A3C6E'
+    }], { yTitle: '吨(T)', legendPosition: 'bottom' });
+})();
+</script>
+{% endblock %}

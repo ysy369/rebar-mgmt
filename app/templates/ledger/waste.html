@@ -1,0 +1,25 @@
+{% extends "ledger/base_ledger.html" %}
+{% from "_macros.html" import data_table, empty_state %}
+{% set title = "废料台账" %}{% set import_type = "waste" %}{% set total_label = "废料总量" %}{% set unit_label = "吨(T)" if unit=='T' else "公斤(kg)" %}
+{% block table %}
+{% call data_table(['处理日期', '单号', '过磅前(T)', '过磅后(T)', '废料重(T)', '型号(m)', '车牌', '劳务队', '备注']) %}
+    {% if items %}
+    {% for i in items %}<tr>
+        <td>{{ i.process_date.strftime('%Y-%m-%d') if i.process_date else '-' }}</td>
+        <td>{{ i.receipt_no or '-' }}</td>
+        <td class="text-end">{{ i.vehicle_before | format_ton }}</td>
+        <td class="text-end">{{ i.vehicle_after | format_ton }}</td>
+        <td class="text-end fw-bold">{{ i.display_weight | format_ton }}</td>
+        <td>{{ i.rebar_length or '-' }}</td>
+        <td>{{ i.plate_no or '-' }}</td>
+        <td>{{ i.labor_team or '-' }}</td>
+        <td class="small">{{ i.remark or '-' }}</td>
+    </tr>{% endfor %}
+    {% else %}
+    <tr><td colspan="9">{{ empty_state('inbox', '暂无废料记录') }}</td></tr>
+    {% endif %}
+{% endcall %}
+{% endblock %}
+{% block cross_links %}
+<div class="mt-2 small"><a href="{{ url_for('ledger.transfer_list', project_id=project.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-arrow-right"></i> 查看调拨台账</a></div>
+{% endblock %}

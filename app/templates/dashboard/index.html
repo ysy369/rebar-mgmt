@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页数据看板 — 钢筋精细化管理平台</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ================= 基础重置与变量 ================= */
+        :root {
+            --bg-primary: #0a1628;
+            --bg-card: rgba(13, 31, 60, 0.8);
+            --border-color: rgba(0, 212, 255, 0.3);
+            --cyan: #00d4ff;
+            --orange: #ff7a00;
+            --text-primary: #ffffff;
+            --text-secondary: #8899aa;
+            --grid-color: #1a3a5c;
+            --danger: #ff4d4f;
+            --warning: #ff7a00;
+            --success: #00d4a0;
+            --info: #f4d03f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* ================= 顶部导航栏 ================= */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            z-index: 1000;
+            background: linear-gradient(90deg, rgba(10,22,40,0.98) 0%, rgba(13,31,60,0.95) 100%);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            gap: 16px;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-shrink: 0;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--cyan);
+            text-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+            flex-shrink: 0;
+        }
+
+        .navbar-brand i {
+            font-size: 22px;
+        }
+
+        /* ================= 改动3：横向导航菜单 ================= */
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu li a {
+            display: block;
+            padding: 8px 14px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .nav-menu li a:hover {
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .nav-menu li a.active {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .nav-menu li a.active::after {
+            content: "";
+            position: absolute;
+            bottom: 2px;
+            left: 14px;
+            right: 14px;
+            height: 2px;
+            background: var(--cyan);
+            border-radius: 1px;
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        /* ================= 改动2：日期筛选表单 ================= */
+        .navbar-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .filter-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(10, 25, 48, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+
+        .filter-form select,
+        .filter-form input[type="date"] {
+            height: 32px;
+            padding: 0 10px;
+            background: rgba(10, 22, 40, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .filter-form select {
+            min-width: 100px;
+            cursor: pointer;
+        }
+
+        .filter-form input[type="date"] {
+            width: 136px;
+        }
+
+        .filter-form select:focus,
+        .filter-form input[type="date"]:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+
+        .filter-form select option {
+            background: #0a1628;
+            color: var(--text-primary);
+        }
+
+        .date-range-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-range-group span {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .btn-filter {
+            height: 32px;
+            padding: 0 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+        }
+
+        .btn-filter-primary {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .btn-filter-primary:hover {
+            background: var(--cyan);
+            color: var(--bg-primary);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+        }
+
+        .btn-filter-secondary {
+            background: transparent;
+            border-color: rgba(136, 153, 170, 0.4);
+            color: var(--text-secondary);
+        }
+
+        .btn-filter-secondary:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .navbar-meta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .navbar-meta .date-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .navbar-meta .user-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-primary);
+        }
+
+        .navbar-meta .user-box i {
+            color: var(--cyan);
+            font-size: 16px;
+        }
+
+        .btn-logout {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--cyan);
+            color: var(--bg-primary);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+        }
+
+        /* ================= 主体三栏布局 ================= */
+        .dashboard-wrapper {
+            padding-top: 64px;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 30% 40% 30%;
+            gap: 18px;
+            padding: 80px 18px 18px;
+        }
+
+        .dashboard-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .dashboard-column::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .dashboard-column::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        /* ================= 通用卡片 ================= */
+        .tech-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+        }
+
+        .tech-card:hover {
+            box-shadow: 0 0 22px rgba(0, 212, 255, 0.25);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+
+        .card-header-tech {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .card-title-tech {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title-tech::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: var(--cyan);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* ================= KPI 数字 ================= */
+        .kpi-big {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--cyan);
+            text-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+            line-height: 1.2;
+        }
+
+        .kpi-unit {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: normal;
+            margin-left: 4px;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ================= KPI 卡片组 ================= */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: rgba(10, 25, 48, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: rgba(0, 212, 255, 0.45);
+            transform: translateY(-2px);
+        }
+
+        .kpi-card .value {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--cyan);
+            text-shadow: 0 0 8px rgba(0, 212, 255, 0.35);
+        }
+
+        .kpi-card .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .kpi-card .badge-tag {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-tag.success {
+            background: rgba(0, 212, 160, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 212, 160, 0.3);
+        }
+
+        .badge-tag.warning {
+            background: rgba(255, 122, 0, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255, 122, 0, 0.3);
+        }
+
+        .badge-tag.danger {
+            background: rgba(255, 77, 79, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 79, 0.3);
+        }
+
+        /* ================= 物资指数列表 ================= */
+        .material-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .material-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: rgba(10, 25, 48, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .material-item:hover {
+            background: rgba(0, 212, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.35);
+        }
+
+        .material-item .info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .material-item .icon {
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--cyan);
+            font-size: 16px;
+        }
+
+        .material-item .name {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .material-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .material-item .value span {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: normal;
+            margin-left: 2px;
+        }
+
+        /* ================= 中央区域 ================= */
+        .center-header {
+            text-align: center;
+            padding: 24px 0 10px;
+        }
+
+        .center-title {
+            font-size: 34px;
+            font-weight: bold;
+            color: var(--text-primary);
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+            margin-bottom: 10px;
+        }
+
+        .center-meta {
+            display: inline-flex;
+            align-items: center;
+            gap: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            padding: 8px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+        }
+
+        .center-meta i {
+            color: var(--cyan);
+        }
+
+        /* ================= 图表容器 ================= */
+        .chart-box {
+            position: relative;
+            height: 230px;
+            width: 100%;
+        }
+
+        /* 改动1：折线图区域扩展 */
+        .chart-box.line {
+            height: 420px;
+            min-height: 320px;
+        }
+
+        .trend-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .trend-card .chart-box.line {
+            flex: 1;
+            height: auto;
+        }
+
+        /* ================= Tab 切换 ================= */
+        .tech-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tech-tab {
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tech-tab:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .tech-tab.active {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        /* ================= 预警列表 ================= */
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .alert-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .alert-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        .alert-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: rgba(10, 25, 48, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .alert-card:hover {
+            background: rgba(0, 212, 255, 0.06);
+        }
+
+        .alert-card .left {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .alert-card .project-name {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .alert-card .desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .alert-card .right {
+            text-align: right;
+        }
+
+        .alert-card .value {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .alert-card .tag {
+            display: inline-block;
+            margin-top: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .tag-danger {
+            background: rgba(255, 77, 79, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 79, 0.3);
+        }
+
+        .tag-warning {
+            background: rgba(255, 122, 0, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255, 122, 0, 0.3);
+        }
+
+        .tag-info {
+            background: rgba(244, 208, 63, 0.12);
+            color: var(--info);
+            border: 1px solid rgba(244, 208, 63, 0.25);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 36px;
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+
+        /* ================= 响应式 ================= */
+        @media (max-width: 1600px) {
+            .navbar-left {
+                gap: 14px;
+            }
+            .nav-menu li a {
+                padding: 8px 10px;
+                font-size: 13px;
+            }
+            .filter-form input[type="date"] {
+                width: 120px;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .dashboard-wrapper {
+                grid-template-columns: 1fr 1.2fr 1fr;
+            }
+            .navbar-center {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-wrapper {
+                grid-template-columns: 1fr;
+                overflow-y: auto;
+            }
+            .dashboard-column {
+                overflow-y: visible;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 顶部导航栏 -->
+<nav class="top-navbar">
+    <!-- 左侧：品牌 + 横向导航菜单（改动3） -->
+    <div class="navbar-left">
+        <div class="navbar-brand">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>钢筋精细化管理平台</span>
+        </div>
+
+        <!-- 导航菜单已移至侧边栏 -->
+    </div>
+
+    <!-- 中间：历史数据查询 -->
+    <div class="navbar-center">
+        <span class="me-2" style="color:#8899aa;font-size:12px;">历史数据查询</span>
+        <form method="GET" action="{{ url_for('project.dashboard') }}" class="filter-form" id="dashboardFilterForm">
+            <select name="period" id="periodSelect">
+                <option value="all" {% if current_period == 'all' %}selected{% endif %}>全期</option>
+                <option value="month" {% if current_period == 'month' %}selected{% endif %}>本月</option>
+                <option value="quarter" {% if current_period == 'quarter' %}selected{% endif %}>本季度</option>
+                <option value="year" {% if current_period == 'year' %}selected{% endif %}>本年</option>
+                <option value="custom" {% if current_period == 'custom' %}selected{% endif %}>自定义</option>
+            </select>
+            <select name="project_ids" class="filter-select-multi" multiple size="1" style="min-width:140px;" title="项目名称">
+                {% for p in all_dashboard_projects %}
+                <option value="{{ p.id }}" {% if p.id in selected_project_ids %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+            <div class="date-range-group" id="customDateRange" {% if current_period != 'custom' %}style="display:none"{% endif %}>
+                <input type="date" name="start_date" value="{{ start_date }}" placeholder="开始日期">
+                <span>至</span>
+                <input type="date" name="end_date" value="{{ end_date }}" placeholder="结束日期">
+            </div>
+            <button type="submit" class="btn-filter btn-filter-primary">
+                <i class="bi bi-search"></i> 查询
+            </button>
+            <a href="{{ url_for('project.dashboard') }}" class="btn-filter btn-filter-secondary">
+                <i class="bi bi-arrow-repeat"></i> 重置
+            </a>
+        </form>
+    </div>
+
+    <!-- 右侧：日期、用户、退出 -->
+    <div class="navbar-right">
+        <div class="navbar-meta">
+            <div class="date-box">
+                <i class="bi bi-calendar3"></i>
+                <span>{{ current_date.strftime('%Y-%m-%d') }}</span>
+            </div>
+            <div class="user-box">
+                <i class="bi bi-person-circle"></i>
+                <span>{{ current_user.display_name }}</span>
+                <span class="badge-tag {{ 'warning' if current_user.is_admin else 'success' }}">
+                    {{ '管理员' if current_user.is_admin else '工程师' }}
+                </span>
+            </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="btn-logout">
+            <i class="bi bi-box-arrow-right"></i> 退出
+        </a>
+    </div>
+</nav>
+
+<!-- 主体三栏布局 -->
+<div class="dashboard-wrapper">
+
+    <!-- ========== 左栏：周期指标（可切换 全期/本期/前期） ========== -->
+    <aside class="dashboard-column">
+        <!-- 周期切换控件 + 管理效益大数字 -->
+        <div class="tech-card" id="leftMetricCard">
+            <div class="card-header-tech">
+                <div class="card-title-tech">周期指标</div>
+                <div class="tech-tabs" id="periodToggleTabs">
+                    <button type="button" class="tech-tab active" data-period="all">全期指标</button>
+                    <button type="button" class="tech-tab" data-period="current">本期指标</button>
+                    <button type="button" class="tech-tab" data-period="prev">前期指标</button>
+                </div>
+            </div>
+            <div class="mb-2 period-section" id="period-all">
+                <div class="kpi-label">管理效益（周期累计）</div>
+                <div class="kpi-big">{{ all_stats.saved_qty | format_ton(1) }}<span class="kpi-unit">T</span></div>
+            </div>
+            <div class="mb-2 period-section" id="period-current" style="display:none">
+                <div class="kpi-label">管理效益（{{ period_label_all }}）</div>
+                <div class="kpi-big">{{ selected_stats.saved_qty | format_ton(1) }}<span class="kpi-unit">T</span></div>
+            </div>
+            <div class="mb-2 period-section" id="period-prev" style="display:none">
+                <div class="kpi-label">管理效益（{{ prev_label }}）</div>
+                <div class="kpi-big">{{ prev_stats.saved_qty | format_ton(1) }}<span class="kpi-unit">T</span></div>
+            </div>
+        </div>
+
+        <!-- KPI 卡片 -->
+        <div class="tech-card">
+            <div class="card-title-tech mb-3">核心 KPI</div>
+            <div id="kpi-all" class="kpi-grid period-section">
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.usage_qty | format_ton(1) }}</div><div class="label">消耗量</div>
+                    <span class="badge-tag {{ all_status.usage_class }}">{{ all_status.usage_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.loss_rate }}%</div><div class="label">损耗率</div>
+                    <span class="badge-tag {{ all_status.loss_class }}">{{ all_status.loss_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.efficiency_rate }}%</div><div class="label">效益率</div>
+                    <span class="badge-tag {{ all_status.efficiency_class }}">{{ all_status.efficiency_label }}</span>
+                </div>
+            </div>
+            <div id="kpi-current" class="kpi-grid period-section" style="display:none">
+                <div class="kpi-card">
+                    <div class="value">{{ selected_stats.usage_qty | format_ton(1) }}</div><div class="label">消耗量</div>
+                    <span class="badge-tag {{ selected_status.usage_class }}">{{ selected_status.usage_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ selected_stats.loss_rate }}%</div><div class="label">损耗率</div>
+                    <span class="badge-tag {{ selected_status.loss_class }}">{{ selected_status.loss_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ selected_stats.efficiency_rate }}%</div><div class="label">效益率</div>
+                    <span class="badge-tag {{ selected_status.efficiency_class }}">{{ selected_status.efficiency_label }}</span>
+                </div>
+            </div>
+            <div id="kpi-prev" class="kpi-grid period-section" style="display:none">
+                <div class="kpi-card">
+                    <div class="value">{{ prev_stats.usage_qty | format_ton(1) }}</div><div class="label">消耗量</div>
+                    <span class="badge-tag {{ prev_status.usage_class }}">{{ prev_status.usage_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ prev_stats.loss_rate }}%</div><div class="label">损耗率</div>
+                    <span class="badge-tag {{ prev_status.loss_class }}">{{ prev_status.loss_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ prev_stats.efficiency_rate }}%</div><div class="label">效益率</div>
+                    <span class="badge-tag {{ prev_status.efficiency_class }}">{{ prev_status.efficiency_label }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 柱状图：周期收支对比 -->
+        <div class="tech-card">
+            <div class="card-header-tech">
+                <div class="card-title-tech">周期收支对比</div>
+                <div class="card-subtitle">单位：吨(T)</div>
+            </div>
+            <div class="chart-box"><canvas id="currentBarChart"></canvas></div>
+        </div>
+
+        <!-- 物资指数列表 -->
+        <div class="tech-card">
+            <div class="card-title-tech mb-3">周期物资指数</div>
+            <div id="material-all" class="material-list period-section">
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-seam"></i></div><div class="name">半原库存</div></div><div class="value">{{ material_all.semi_inventory | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-left-circle"></i></div><div class="name">调入钢材</div></div><div class="value">{{ material_all.transfer_in | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-right-circle"></i></div><div class="name">调出钢材</div></div><div class="value">{{ material_all.transfer_out | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="name">进场钢材</div></div><div class="value">{{ material_all.incoming | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-trash"></i></div><div class="name">废旧钢材</div></div><div class="value">{{ material_all.waste | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-rulers"></i></div><div class="name">措施用量</div></div><div class="value">{{ material_all.measure | format_ton(1) }}<span>T</span></div></div>
+            </div>
+            <div id="material-current" class="material-list period-section" style="display:none">
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-seam"></i></div><div class="name">半原库存</div></div><div class="value">{{ material_selected.semi_inventory | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-left-circle"></i></div><div class="name">调入钢材</div></div><div class="value">{{ material_selected.transfer_in | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-right-circle"></i></div><div class="name">调出钢材</div></div><div class="value">{{ material_selected.transfer_out | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="name">进场钢材</div></div><div class="value">{{ material_selected.incoming | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-trash"></i></div><div class="name">废旧钢材</div></div><div class="value">{{ material_selected.waste | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-rulers"></i></div><div class="name">措施用量</div></div><div class="value">{{ material_selected.measure | format_ton(1) }}<span>T</span></div></div>
+            </div>
+            <div id="material-prev" class="material-list period-section" style="display:none">
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-seam"></i></div><div class="name">半原库存</div></div><div class="value">{{ material_prev.semi_inventory | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-left-circle"></i></div><div class="name">调入钢材</div></div><div class="value">{{ material_prev.transfer_in | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-arrow-right-circle"></i></div><div class="name">调出钢材</div></div><div class="value">{{ material_prev.transfer_out | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-box-arrow-in-right"></i></div><div class="name">进场钢材</div></div><div class="value">{{ material_prev.incoming | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-trash"></i></div><div class="name">废旧钢材</div></div><div class="value">{{ material_prev.waste | format_ton(1) }}<span>T</span></div></div>
+                <div class="material-item"><div class="info"><div class="icon"><i class="bi bi-rulers"></i></div><div class="name">措施用量</div></div><div class="value">{{ material_prev.measure | format_ton(1) }}<span>T</span></div></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ========== 中栏：项目概况 + 平台标题 + 趋势图 ========== -->
+    <main class="dashboard-column">
+        {% if projects %}
+        <div class="tech-card" style="padding:14px 18px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="font-size:13px;color:var(--text-secondary);">项目概况</div>
+                {% for p in projects[:4] %}
+                <div style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:8px 14px;">
+                    <div style="font-size:14px;color:var(--cyan);font-weight:600;">{{ p.name }}</div>
+                    <div style="font-size:11px;color:var(--text-secondary);">
+                        {{ p.building_area ~ ' m²' if p.building_area else '-' }} | {{ p.rebar_content ~ ' kg/m²' if p.rebar_content else '-' }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        <div class="center-header">
+            <h1 class="center-title">钢筋精细化管理平台</h1>
+            <div class="center-meta">
+                <span><i class="bi bi-calendar3"></i> {{ current_date.strftime('%Y年%m月%d日') }}</span>
+                <span><i class="bi bi-clock-history"></i> {{ period_label }}</span>
+            </div>
+        </div>
+
+        <!-- 改动1：移除业务模块网格，折线图区域扩展 -->
+        <div class="tech-card trend-card">
+            <div class="card-header-tech">
+                <div class="card-title-tech">耗用指数月度趋势</div>
+                <div class="tech-tabs" id="trendTabs">
+                    <button type="button" class="tech-tab active" data-type="usage">施工进度</button>
+                    <button type="button" class="tech-tab" data-type="bom">翻样进度</button>
+                    <button type="button" class="tech-tab" data-type="incoming">采购进度</button>
+                </div>
+            </div>
+            <div class="chart-box line">
+                <canvas id="trendLineChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========== 右栏：全期指标 ========== -->
+    <aside class="dashboard-column">
+        <!-- 管理效益大数字 -->
+        <div class="tech-card">
+            <div class="card-header-tech">
+                <div class="card-title-tech">全期指标</div>
+                <div class="card-subtitle">累计数据</div>
+            </div>
+            <div class="mb-2">
+                <div class="kpi-label">管理效益</div>
+                <div class="kpi-big">
+                    {{ all_stats.saved_qty | format_ton(1) }}
+                    <span class="kpi-unit">T</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 卡片 -->
+        <div class="tech-card">
+            <div class="card-title-tech mb-3">核心 KPI</div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.saved_qty | format_ton(1) }}</div>
+                    <div class="label">效益量</div>
+                    <span class="badge-tag {{ all_status.efficiency_class }}">{{ all_status.efficiency_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.loss_rate }}%</div>
+                    <div class="label">损耗率</div>
+                    <span class="badge-tag {{ all_status.loss_class }}">{{ all_status.loss_label }}</span>
+                </div>
+                <div class="kpi-card">
+                    <div class="value">{{ all_stats.efficiency_rate }}%</div>
+                    <div class="label">效益率</div>
+                    <span class="badge-tag {{ all_status.efficiency_class }}">{{ all_status.efficiency_label }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 柱状图：全期预算/消耗/节约 -->
+        <div class="tech-card">
+            <div class="card-header-tech">
+                <div class="card-title-tech">全期收支对比</div>
+                <div class="card-subtitle">单位：吨(T)</div>
+            </div>
+            <div class="chart-box">
+                <canvas id="allBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 指数预警 -->
+        <div class="tech-card">
+            <div class="card-header-tech">
+                <div class="card-title-tech">指数预警</div>
+                <span class="badge-tag {{ 'danger' if alerts else 'success' }}">{{ alerts | length }} 项异常</span>
+            </div>
+            <div class="alert-list">
+                {% if alerts %}
+                    {% for alert in alerts %}
+                    <div class="alert-card">
+                        <div class="left">
+                            <div class="project-name">{{ alert.project }}</div>
+                            <div class="desc">{{ alert.desc }}</div>
+                        </div>
+                        <div class="right">
+                            <div class="value">{{ alert.value }}</div>
+                            <span class="tag tag-{{ alert.tag_class }}">{{ alert.tag }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>暂无异常指标</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    // ================= 周期切换（全期/本期/前期） =================
+    var periodTabs = document.querySelectorAll('#periodToggleTabs .tech-tab');
+    periodTabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            periodTabs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            var period = this.getAttribute('data-period');
+            // 隐藏所有周期区块
+            document.querySelectorAll('.period-section').forEach(function(s) { s.style.display = 'none'; });
+            // 显示对应周期区块
+            var sections = document.querySelectorAll('[id^="period-"], [id^="kpi-"], [id^="material-"]');
+            sections.forEach(function(s) {
+                if (s.id.indexOf(period) !== -1 && s.classList.contains('period-section')) {
+                    s.style.display = s.classList.contains('kpi-grid') ? 'grid' : (s.classList.contains('material-list') ? 'flex' : '');
+                }
+            });
+            // 更新柱状图数据
+            updateBarChart(period);
+        });
+    });
+
+    function updateBarChart(period) {
+        var allData = [{{ all_stats.contract_qty | float }}, {{ all_stats.usage_qty | float }}, {{ all_stats.saved_qty | float }}];
+        var curData = [{{ selected_stats.contract_qty | float }}, {{ selected_stats.usage_qty | float }}, {{ selected_stats.saved_qty | float }}];
+        var prevData = [{{ prev_stats.contract_qty | float }}, {{ prev_stats.usage_qty | float }}, {{ prev_stats.saved_qty | float }}];
+        var labels = ['全期累计', '本期', '前期'];
+        var dataMap = { all: allData, current: curData, prev: prevData };
+        var labelMap = { all: '全期累计', current: '{{ period_label_all }}', prev: '{{ prev_label }}' };
+        if (window._currentBarChart) {
+            window._currentBarChart.data.datasets[0].data = dataMap[period] || allData;
+            window._currentBarChart.data.datasets[0].label = labelMap[period] || '全期累计';
+            window._currentBarChart.update();
+        }
+    }
+
+    // ================= 日期筛选交互 =================
+    var periodSelect = document.getElementById('periodSelect');
+    var customDateRange = document.getElementById('customDateRange');
+
+    function toggleCustomDateRange() {
+        if (periodSelect.value === 'custom') {
+            customDateRange.style.display = 'flex';
+        } else {
+            customDateRange.style.display = 'none';
+        }
+    }
+
+    if (periodSelect) {
+        periodSelect.addEventListener('change', toggleCustomDateRange);
+        toggleCustomDateRange();
+    }
+
+    // ================= Chart.js 深色主题配置（保持原有逻辑） =================
+    Chart.defaults.color = '#8899aa';
+    Chart.defaults.borderColor = '#1a3a5c';
+    Chart.defaults.font.family = '"Microsoft YaHei", sans-serif';
+
+    function commonChartOptions(yTitle) {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#ffffff', font: { size: 12 } }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(13, 31, 60, 0.95)',
+                    titleColor: '#00d4ff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(0, 212, 255, 0.3)',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#1a3a5c', drawBorder: false },
+                    ticks: { color: '#8899aa' }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#1a3a5c', drawBorder: false },
+                    ticks: { color: '#8899aa' },
+                    title: {
+                        display: !!yTitle,
+                        text: yTitle,
+                        color: '#8899aa',
+                        font: { size: 12 }
+                    }
+                }
+            }
+        };
+    }
+
+    // ================= 左栏：周期柱状图 =================
+    window._currentBarChart = new Chart(document.getElementById('currentBarChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ['预算量', '消耗量', '节约量'],
+            datasets: [{
+                label: '{{ period_label }}',
+                data: [
+                    {{ selected_stats.contract_qty | float }},
+                    {{ selected_stats.usage_qty | float }},
+                    {{ selected_stats.saved_qty | float }}
+                ],
+                backgroundColor: [
+                    'rgba(26, 60, 110, 0.9)',
+                    'rgba(255, 122, 0, 0.9)',
+                    'rgba(0, 212, 255, 0.9)'
+                ],
+                borderColor: [
+                    '#1A3C6E',
+                    '#FF7A00',
+                    '#00D4FF'
+                ],
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: commonChartOptions('吨(T)')
+    });
+
+    // ================= 右栏：全期柱状图 =================
+    new Chart(document.getElementById('allBarChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ['预算量', '消耗量', '节约量'],
+            datasets: [{
+                label: '全期累计',
+                data: [
+                    {{ all_stats.contract_qty | float }},
+                    {{ all_stats.usage_qty | float }},
+                    {{ all_stats.saved_qty | float }}
+                ],
+                backgroundColor: [
+                    'rgba(26, 60, 110, 0.9)',
+                    'rgba(255, 122, 0, 0.9)',
+                    'rgba(0, 212, 255, 0.9)'
+                ],
+                borderColor: [
+                    '#1A3C6E',
+                    '#FF7A00',
+                    '#00D4FF'
+                ],
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: commonChartOptions('吨(T)')
+    });
+
+    // ================= 中栏：折线图 Tab 切换 =================
+    var trendLabels = {{ trend.labels | tojson }};
+    var trendData = {
+        usage: {{ trend.usage | tojson }},
+        bom: {{ trend.bom | tojson }},
+        incoming: {{ trend.incoming | tojson }}
+    };
+
+    var trendDatasets = {
+        usage: {
+            label: '施工进度（耗用量）',
+            data: trendData.usage,
+            borderColor: '#00d4ff',
+            backgroundColor: 'rgba(0, 212, 255, 0.12)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#00d4ff',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        },
+        bom: {
+            label: '翻样进度（配料单吨数）',
+            data: trendData.bom,
+            borderColor: '#ff7a00',
+            backgroundColor: 'rgba(255, 122, 0, 0.12)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#ff7a00',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        },
+        incoming: {
+            label: '采购进度（进场量）',
+            data: trendData.incoming,
+            borderColor: '#00d4a0',
+            backgroundColor: 'rgba(0, 212, 160, 0.12)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#00d4a0',
+            pointBorderColor: '#ffffff',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }
+    };
+
+    var trendChart = new Chart(document.getElementById('trendLineChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [trendDatasets.usage]
+        },
+        options: commonChartOptions('吨(T)')
+    });
+
+    document.querySelectorAll('#trendTabs .tech-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#trendTabs .tech-tab').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            var type = this.getAttribute('data-type');
+            trendChart.data.datasets = [trendDatasets[type]];
+            trendChart.update();
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

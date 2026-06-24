@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card_small, data_table, empty_state %}
+{% block title %}跨项目盈亏分析{% endblock %}
+{% block page_title %}跨项目盈亏分析{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">{{ stat_card_small('所有项目总收入(元)', total_income | format_money, 'primary') }}</div>
+  <div class="col-md-4">{{ stat_card_small('所有项目总成本(元)', total_cost | format_money, 'danger') }}</div>
+  <div class="col-md-4">{{ stat_card_small('总净利润(元)', total_profit | format_money, 'success' if total_profit>0 else 'danger') }}</div>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    {% call data_table(['项目', '甲方', '承接公司', '节超收益', '总成本', '净利润', '利润率', '操作']) %}
+      {% if data %}
+      {% for d in data %}<tr>
+        <td>{{ d.project.name }}</td>
+        <td>{{ d.project.client_unit.name if d.project.client_unit else '-' }}</td>
+        <td>{{ d.project.contractor.name if d.project.contractor else '-' }}</td>
+        <td class="text-end">{{ d.pl.rebar_income | format_money }}</td>
+        <td class="text-end">{{ d.pl.total_cost | format_money }}</td>
+        <td class="text-end {{ 'text-success' if d.pl.net_profit>0 else 'text-danger' }} fw-bold">{{ d.pl.net_profit | format_money }}</td>
+        <td class="{{ 'text-success' if d.pl.profit_rate>0 else 'text-danger' }}">{{ d.pl.profit_rate | format_percent(1) }}%</td>
+        <td><a href="{{ url_for('project.pl_analysis', project_id=d.project.id) }}" class="btn btn-sm btn-outline-primary" aria-label="查看" title="查看"><i class="bi bi-eye"></i></a></td>
+      </tr>{% endfor %}
+      {% else %}
+      <tr><td colspan="8">{{ empty_state('inbox', '暂无项目数据') }}</td></tr>
+      {% endif %}
+    {% endcall %}
+  </div>
+</div>
+{% endblock %}

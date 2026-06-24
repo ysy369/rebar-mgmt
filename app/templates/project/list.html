@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty_state %}
+{% block title %}项目列表 — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}{{ '全部项目' if current_user.is_admin else '我的项目' }}{% endblock %}
+{% block content %}
+<div class="dashboard">
+    {% if projects %}
+        <div class="row g-3">
+            {% for project in projects %}
+            <div class="col-xl-4 col-lg-6">
+                <div class="card project-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="project-icon"><i class="bi bi-building"></i></div>
+                            <div class="ms-3">
+                                <h6 class="mb-0">{{ project.name }}</h6>
+                                <small class="text-muted d-block">
+                                    {% if project.client_unit %}{{ project.client_unit.name }} |{% endif %}
+                                    {% if project.contractor %}{{ project.contractor.name }}{% else %}未指定承接公司{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="row g-1 mb-2 text-center small">
+                            <div class="col-6"><span class="text-muted">配料单构件</span><br><strong>{{ project.bom_components }}</strong></div>
+                            <div class="col-6"><span class="text-muted">配料单吨数</span><br><strong>{{ "%.1f"|format(project.bom_tonnage) }} T</strong></div>
+                        </div>
+                        <div class="project-actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <a href="{{ url_for('project.detail', project_id=project.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye"></i> 详情
+                            </a>
+                            <a href="{{ url_for('project.attachments', project_id=project.id) }}" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-images"></i> 效果图
+                            </a>
+                            <a href="{{ url_for('project.cutting_order_list', project_id=project.id) }}" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-chat-left-text"></i> 料单
+                            </a>
+                            <a href="{{ url_for('project.cost_list', project_id=project.id) }}" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-cash-coin"></i> 成本
+                            </a>
+                            <a href="{{ url_for('project.pl_analysis', project_id=project.id) }}" class="btn btn-outline-dark btn-sm">
+                                <i class="bi bi-pie-chart"></i> 盈亏
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {{ empty_state('folder2-open', '暂无项目', '您暂无被授权的项目，请联系管理员分配项目权限。' if not current_user.is_admin else '您尚未创建任何项目，请先创建项目或添加承接公司。') }}
+    {% endif %}
+</div>
+{% endblock %}

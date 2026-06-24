@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}方样料单{% endblock %}
+{% block page_title %}方样料单{% endblock %}
+{% block content %}
+<div class="row g-3">
+    {% for p in projects %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card project-card">
+            <div class="card-body">
+                <h6 class="mb-2">{{ p.name }}</h6>
+                <small class="text-muted d-block mb-3">{{ p.client_unit.name if p.client_unit else '-' }}</small>
+                <div class="d-grid gap-1">
+                    <a href="{{ url_for('bom.import_page', project_id=p.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-cloud-upload"></i> 批量导入</a>
+                    <a href="{{ url_for('bom.summary', project_id=p.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-table"></i> 数据汇总</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12"><div class="text-center py-5 text-muted"><i class="bi bi-inbox" style="font-size:4rem;"></i><p class="mt-2">暂无项目</p></div></div>
+    {% endfor %}
+</div>
+{% endblock %}

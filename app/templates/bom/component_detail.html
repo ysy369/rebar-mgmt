@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, data_table, empty_state %}
+{% block title %}构件明细 — {{ comp.name }}{% endblock %}
+{% block page_title %}构件明细 — {{ comp.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <!-- 构件信息 -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h5 class="card-title mb-0">构件信息</h5></div>
+            <div class="card-body">
+                <p><strong>名称:</strong> {{ comp.name }}</p>
+                <p><strong>类型:</strong> {{ status_badge(comp.component_type, COMPONENT_TYPE_MAP) }}</p>
+                <p><strong>施工状态:</strong> {{ status_badge(comp.status, COMPONENT_STATUS_MAP) }}</p>
+                <p><strong>总重量:</strong> <span class="fw-bold">{{ comp.total_weight | format_ton(3) }} 吨</span></p>
+            </div>
+        </div>
+    </div>
+    <!-- 钢筋明细 -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h5 class="card-title mb-0">钢筋明细表</h5></div>
+            <div class="card-body p-0">
+                {% call data_table(['直径(mm)', '重量(T)', '根数', '单长(m)', '总长(m)', '来源文件', '备注']) %}
+                    {% if details %}
+                    {% for d in details %}<tr>
+                        <td class="text-center"><span class="badge bg-secondary">{{ d.diameter }}</span></td>
+                        <td class="text-end fw-bold">{{ d.weight | format_ton(3) }}</td>
+                        <td class="text-end">{{ d.rebar_count or '-' }}</td>
+                        <td class="text-end">{{ d.single_length | format_ton(2) if d.single_length else '-' }}</td>
+                        <td class="text-end">{{ d.total_length | format_ton(2) if d.total_length else '-' }}</td>
+                        <td class="small">{{ d.source_file or '-' }}</td>
+                        <td class="small">{{ d.remark or '-' }}</td>
+                    </tr>{% endfor %}
+                    {% else %}
+                    <tr><td colspan="7">{{ empty_state('inbox', '暂无钢筋数据') }}</td></tr>
+                    {% endif %}
+                {% endcall %}
+            </div>
+        </div>
+    </div>
+</div>
+<a href="{{ url_for('bom.summary', project_id=project.id) }}" class="btn btn-outline-secondary mt-3"><i class="bi bi-arrow-left"></i> 返回汇总</a>
+{% endblock %}

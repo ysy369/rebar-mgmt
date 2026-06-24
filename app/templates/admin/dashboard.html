@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_table, render_pagination, empty_state, card_table, filter_reset_button %}
+{% block title %}管理平台{% endblock %}
+{% block page_title %}管理平台
+<a href="{{ url_for('admin.recalc_all') }}" class="btn btn-sm btn-outline-warning ms-3"><i class="bi bi-arrow-repeat"></i> 刷新计算</a>
+{% endblock %}
+{% block content %}
+<div class="dashboard-page">
+    <!-- 顶部深色 Hero 横幅：全期核心指标 -->
+    <div class="dashboard-hero">
+        <div class="dashboard-hero-inner">
+            <div class="hero-title-wrap">
+                <h2 class="hero-title"><i class="bi bi-grid-1x2-fill me-2"></i>钢筋精细化管理平台</h2>
+                <div class="hero-chips">
+                    <span class="hero-chip"><i class="bi bi-calendar3"></i>{{ current_date.strftime('%Y-%m-%d') }} 全期视图</span>
+                    <span class="hero-chip"><i class="bi bi-building"></i>建筑面积 <strong>0.000</strong> 万m²</span>
+                    <span class="hero-chip"><i class="bi bi-bezier2"></i>钢筋含量 <strong>0.000</strong> kg/m²</span>
+                </div>
+            </div>
+            <div class="hero-kpi-list">
+                <div class="hero-kpi">
+                    <div class="hero-kpi-label">管理效益（T）</div>
+                    <div class="hero-kpi-value">{{ analysis_stats.saved | format_ton(1) }}<span class="hero-kpi-unit">T</span></div>
+                    <span class="hero-kpi-badge badge {% if analysis_stats.saved > 0 %}bg-success{% else %}bg-secondary{% endif %}">{% if analysis_stats.saved > 0 %}节约{% else %}持平{% endif %}</span>
+                </div>
+                <div class="hero-kpi-divider"></div>
+                <div class="hero-kpi">
+                    <div class="hero-kpi-label">损耗率</div>
+                    <div class="hero-kpi-value">{{ loss_rate }}<span class="hero-kpi-unit">%</span></div>
+                    <span class="hero-kpi-badge badge {% if loss_rate <= 2 %}bg-success{% elif loss_rate <= 5 %}bg-warning{% else %}bg-danger{% endif %}">{% if loss_rate <= 2 %}正常{% elif loss_rate <= 5 %}关注{% else %}偏高{% endif %}</span>
+                </div>
+                <div class="hero-kpi-divider"></div>
+                <div class="hero-kpi">
+                    <div class="hero-kpi-label">效益率</div>
+                    <div class="hero-kpi-value">{{ efficiency_rate }}<span class="hero-kpi-unit">%</span></div>
+                    <span class="hero-kpi-badge badge {% if efficiency_rate >= 5 %}bg-success{% elif efficiency_rate >= 0 %}bg-warning{% else %}bg-danger{% endif %}">{% if efficiency_rate >= 5 %}优秀{% elif efficiency_rate >= 0 %}良好{% else %}亏损{% endif %}</span>
+                </div>
+                <div class="hero-kpi-divider"></div>
+                <div class="hero-kpi">
+                    <div class="hero-kpi-label">预算总量（T）</div>
+                    <div class="hero-kpi-value">{{ analysis_stats.contract_qty | format_ton(1) }}<span class="hero-kpi-unit">T</span></div>
+                    <span class="hero-kpi-badge badge bg-info">对甲结算</span>
+                </div>
+                <div class="hero-kpi-divider"></div>
+                <div class="hero-kpi">
+                    <div class="hero-kpi-label">进场总量（T）</div>
+                    <div class="hero-kpi-value">{{ incoming_total | format_ton(1) }}<span class="hero-kpi-unit">T</span></div>
+                    <span class="hero-kpi-badge badge bg-success">累计进场</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 四列等宽核心指标卡：全期 -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-core-card">
+                <div class="core-icon bg-primary-light">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="core-body">
+                    <div class="core-value">{{ analysis_stats.contract_qty | format_ton(1) }} <small>T</small></div>
+                    <div class="core-label">预算总量</div>
+                    <span class="core-badge badge bg-success">全期累计</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-core-card">
+                <div class="core-icon bg-info-light">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                </div>
+                <div class="core-body">
+                    <div class="core-value">{{ bom_stats.total_tonnage | format_ton(1) }} <small>T</small></div>
+                    <div class="core-label">翻样总量</div>
+                    <span class="core-badge badge bg-info">累计 {{ bom_stats.component_count }} 构件</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-core-card">
+                <div class="core-icon bg-warning-light">
+                    <i class="bi bi-graph-down"></i>
+                </div>
+                <div class="core-body">
+                    <div class="core-value">{{ analysis_stats.usage | format_ton(1) }} <small>T</small></div>
+                    <div class="core-label">消耗总量</div>
+                    <span class="core-badge badge bg-warning">效益率 {{ efficiency_rate }}%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-core-card">
+                <div class="core-icon bg-success-light">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                </div>
+                <div class="core-body">
+                    <div class="core-value">{{ incoming_total | format_ton(1) }} <small>T</small></div>
+                    <div class="core-label">进场总量</div>
+                    <span class="core-badge badge bg-success">累计进场</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选器：新增统计周期 -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <form method="GET" class="row g-2 align-items-end" id="dashboardFilterForm">
+                <div class="col-auto">
+                    <label class="form-label small mb-0">统计周期</label>
+                    <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="all" {% if current_period == 'all' %}selected{% endif %}>全期</option>
+                        <option value="" disabled>—— 按月筛选 ——</option>
+                        {% for val, text in period_options %}
+                        <option value="{{ val }}" {% if current_period == val %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">承接公司</label>
+                    <select name="contractor_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">全部公司</option>
+                        {% for ct in contractors %}<option value="{{ ct.id }}" {% if current_contractor_id==ct.id %}selected{% endif %}>{{ ct.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">甲方单位</label>
+                    <select name="client_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">全部甲方</option>
+                        {% for c in clients %}<option value="{{ c.id }}" {% if current_client_id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">{{ filter_reset_button(url_for('admin.dashboard')) }}</div>
+            </form>
+        </div>
+    </div>
+
+    {% if monthly_stats %}
+    <!-- 月度指标区块（选择月份后动态追加） -->
+    <div class="row g-3 mb-3" id="monthlyMetrics">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="dashboard-card-title mb-0"><i class="bi bi-calendar-month"></i> {{ selected_period }} 月度指标</h6>
+                    <span class="badge bg-primary">按月汇总</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value text-primary">{{ monthly_stats['contract_qty'] | format_ton(1) }}</div>
+                                <div class="kpi-label">预算总量(T)</div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value text-success">{{ monthly_stats['incoming'] | format_ton(1) }}</div>
+                                <div class="kpi-label">进场总量(T)</div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value text-warning">{{ monthly_stats['usage'] | format_ton(1) }}</div>
+                                <div class="kpi-label">消耗总量(T)</div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value text-info">{{ monthly_stats['saved'] | format_ton(1) }}</div>
+                                <div class="kpi-label">管理效益(T)</div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value {% if monthly_stats['loss_rate'] <= 2 %}text-success{% elif monthly_stats['loss_rate'] <= 5 %}text-warning{% else %}text-danger{% endif %}">{{ monthly_stats['loss_rate'] }}%</div>
+                                <div class="kpi-label">损耗率</div>
+                            </div>
+                        </div>
+                        <div class="col-xl-2 col-md-4 col-6">
+                            <div class="dashboard-kpi-card">
+                                <div class="kpi-value {% if monthly_stats['efficiency_rate'] >= 5 %}text-success{% elif monthly_stats['efficiency_rate'] >= 0 %}text-warning{% else %}text-danger{% endif %}">{{ monthly_stats['efficiency_rate'] }}%</div>
+                                <div class="kpi-label">效益率</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 下半部分：业务模块 + 主要指数（带 tab） -->
+    <div class="row g-3 mb-3">
+        <!-- 左侧：业务模块 -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="dashboard-card-title"><i class="bi bi-grid-3x3-gap"></i> 业务模块</h6>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-module-grid compact">
+                        <a href="{{ url_for('bom.dashboard') }}" class="dashboard-module-card">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span>钢筋预算</span>
+                        </a>
+                        <a href="{{ url_for('bom.dashboard') }}" class="dashboard-module-card">
+                            <i class="bi bi-file-earmark-spreadsheet"></i>
+                            <span>钢筋翻样</span>
+                        </a>
+                        <a href="{{ url_for('admin.project_list') }}" class="dashboard-module-card">
+                            <i class="bi bi-building"></i>
+                            <span>钢筋物资</span>
+                        </a>
+                        <a href="{{ url_for('admin.project_list') }}" class="dashboard-module-card">
+                            <i class="bi bi-kanban"></i>
+                            <span>策划管理</span>
+                        </a>
+                        <a href="#" class="dashboard-module-card" onclick="alert('功能开发中');return false;">
+                            <i class="bi bi-clipboard-check"></i>
+                            <span>巡检台帐</span>
+                        </a>
+                        <a href="{{ url_for('admin.pl_dashboard') }}" class="dashboard-module-card">
+                            <i class="bi bi-pie-chart"></i>
+                            <span>盈亏分析</span>
+                        </a>
+                        <a href="{{ url_for('admin.project_list') }}" class="dashboard-module-card">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>结算管理</span>
+                        </a>
+                        <a href="{{ url_for('admin.contractor_list') }}" class="dashboard-module-card">
+                            <i class="bi bi-truck"></i>
+                            <span>分包领用</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：主要指数 -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="dashboard-card-title mb-0"><i class="bi bi-bar-chart"></i> 主要指数</h6>
+                    {% if selected_period %}
+                    <div class="dashboard-tabs" id="mainIndexTabs" role="tablist">
+                        <button type="button" class="tab-btn active" data-view="current">本期</button>
+                        <button type="button" class="tab-btn" data-view="all">全期</button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="chart-container chart-adaptive" id="mainIndexChartWrap">
+                        <canvas id="mainIndexChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 指数预警 + 耗用指数 -->
+    <div class="row g-2 mb-2">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="dashboard-card-title mb-0"><i class="bi bi-exclamation-triangle"></i> 指数预警</h6>
+                    <span class="badge bg-danger">异常 {{ alert_count }}</span>
+                </div>
+                <div class="card-body">
+                    {% if alert_items %}
+                    <div class="dashboard-alert-grid">
+                        {% for alert in alert_items[:8] %}
+                        <div class="dashboard-alert-item alert-{{ alert.status }}">
+                            <span class="alert-value">{{ alert.value }}</span>
+                            <div class="alert-title">{{ alert.name }}</div>
+                            <div class="alert-desc">{{ alert.metric }} · {{ alert.desc }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                        <p class="mt-2 mb-0">暂无异常指标</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="dashboard-card-title mb-0"><i class="bi bi-graph-up-arrow"></i> 耗用指数</h6>
+                    <div class="dashboard-tabs">
+                        <button type="button" class="tab-btn active">施工进度</button>
+                        <button type="button" class="tab-btn">翻样进度</button>
+                        <button type="button" class="tab-btn">采购进度</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height:240px;">
+                        <canvas id="usageTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 项目数据汇总 -->
+    <div class="row g-2">
+        <div class="col-12">
+            {% call card_table('项目数据汇总', recent_projects|length ~ ' 个项目') %}
+            {% call data_table(['项目名称', '甲方', '承接公司', '对甲结算(T)', '使用量(T)', '节约量(T)', '结余率', '操作']) %}
+                {% if recent_projects %}
+                {% for p in recent_projects %}<tr>
+                    <td><a href="{{ url_for('project.detail', project_id=p.id) }}">{{ p.name }}</a></td>
+                    <td>{{ p.client_unit.name if p.client_unit else '-' }}</td>
+                    <td>{{ p.contractor.name if p.contractor else '-' }}</td>
+                    <td class="text-end">{{ (p.analysis.contract_qty if p.analysis else 0) | format_ton(1) }}</td>
+                    <td class="text-end">{{ (p.analysis.usage_qty if p.analysis else 0) | format_ton(1) }}</td>
+                    <td class="text-end {{ 'text-success' if (p.analysis.saved_qty or 0) > 0 else 'text-danger' }}">{{ (p.analysis.saved_qty if p.analysis else 0) | format_ton(1) }}</td>
+                    <td class="text-end {{ 'text-success' if (p.analysis.balance_rate or 0) > 0 else 'text-danger' }} fw-bold">{{ (p.analysis.balance_rate or 0) | format_percent(1) }}%</td>
+                    <td><a href="{{ url_for('project.detail', project_id=p.id) }}" class="btn btn-sm btn-outline-primary" aria-label="查看" title="查看"><i class="bi bi-eye"></i></a></td>
+                </tr>{% endfor %}
+                {% else %}
+                <tr><td colspan="8">{{ empty_state('inbox', '暂无项目数据') }}</td></tr>
+                {% endif %}
+            {% endcall %}
+            {{ render_pagination(recent_pagination, 'admin.dashboard') }}
+            {% endcall %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // 主要指数：根据 period 动态渲染单一图表，避免空 canvas 留白
+    var mainChart = null;
+    var pNames = [], pBudget = [], pUsage = [], pSaved = [];
+    {% for p in recent_projects[:8] %}
+    pNames.push({{ p.name[:8] | tojson }});
+    pBudget.push({{ (p.analysis.contract_qty if p.analysis else 0) | float }});
+    pUsage.push({{ (p.analysis.usage_qty if p.analysis else 0) | float }});
+    pSaved.push({{ (p.analysis.saved_qty if p.analysis else 0) | float }});
+    {% endfor %}
+    if (pNames.length === 0) { pNames = ['暂无']; pBudget = [0]; pUsage = [0]; pSaved = [0]; }
+
+    // 全期数据集：按项目展示预算/消耗/节约
+    var allPeriodLabels = pNames;
+    var allPeriodDatasets = [
+        { label: '预算', data: pBudget, backgroundColor: '#1a2744' },
+        { label: '消耗', data: pUsage, backgroundColor: '#e07b39' },
+        { label: '节约', data: pSaved, backgroundColor: '#198754' }
+    ];
+
+    // 本期（月度）数据集
+    {% if monthly_stats %}
+    var currentPeriodLabels = ['预算', '进场', '消耗', '效益'];
+    var currentPeriodDatasets = [
+        {
+            label: '{{ selected_period }} 月度',
+            data: [
+                {{ monthly_stats['contract_qty'] | float }},
+                {{ monthly_stats['incoming'] | float }},
+                {{ monthly_stats['usage'] | float }},
+                {{ monthly_stats['saved'] | float }}
+            ],
+            backgroundColor: ['#1a2744', '#198754', '#e07b39', '#0dcaf0']
+        }
+    ];
+    {% else %}
+    var currentPeriodLabels = [];
+    var currentPeriodDatasets = [];
+    {% endif %}
+
+    function calcChartHeight(labelCount) {
+        var minHeight = 180;
+        var maxHeight = 380;
+        var perLabelHeight = 42; // 每组柱状图（含间距）约 42px
+        var baseHeight = 85;     // 图例、坐标轴、padding 基础高度
+        return Math.max(minHeight, Math.min(maxHeight, labelCount * perLabelHeight + baseHeight));
+    }
+
+    function setChartWrapHeight(labelCount) {
+        var wrap = document.getElementById('mainIndexChartWrap');
+        if (wrap) {
+            wrap.style.height = calcChartHeight(labelCount) + 'px';
+        }
+    }
+
+    function renderMainChart(labels, datasets, yTitle) {
+        setChartWrapHeight(labels.length);
+        var ctx = document.getElementById('mainIndexChart').getContext('2d');
+        if (mainChart) { mainChart.destroy(); }
+        mainChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: !!yTitle, text: yTitle } }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw + ' T';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 默认视图：全期时直接渲染全期；选择月份后默认渲染本期
+    var hasMonthlyStats = {{ 'true' if monthly_stats else 'false' }};
+    if (hasMonthlyStats && currentPeriodLabels.length > 0) {
+        renderMainChart(currentPeriodLabels, currentPeriodDatasets, '吨(T)');
+    } else {
+        renderMainChart(allPeriodLabels, allPeriodDatasets, '吨(T)');
+    }
+
+    // 本期/全期切换
+    document.querySelectorAll('#mainIndexTabs .tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var view = this.getAttribute('data-view');
+            document.querySelectorAll('#mainIndexTabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            if (view === 'current' && currentPeriodLabels.length > 0) {
+                renderMainChart(currentPeriodLabels, currentPeriodDatasets, '吨(T)');
+            } else {
+                renderMainChart(allPeriodLabels, allPeriodDatasets, '吨(T)');
+            }
+        });
+    });
+
+    // 耗用指数：趋势折线图
+    var usageLabels = pNames.length > 1 ? pNames : ['1月','2月','3月','4月','5月','6月'];
+    var usageData = pUsage.length > 1 ? pUsage : [0,0,0,0,0,0];
+    RebarCharts.renderLineChart('usageTrendChart', usageLabels, [
+        {
+            label: '消耗量(T)',
+            data: usageData,
+            borderColor: '#1a2744',
+            backgroundColor: 'rgba(26, 39, 68, 0.1)',
+            fill: true,
+            tension: 0.4
+        }
+    ], { yTitle: '吨(T)', legendPosition: 'top' });
+})();
+</script>
+{% endblock %}

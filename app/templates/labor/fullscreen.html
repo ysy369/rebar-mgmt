@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>劳务分包管理 — 钢筋精细化管理平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a1628;
+            --bg-card: rgba(13, 31, 60, 0.85);
+            --border-color: rgba(0, 212, 255, 0.25);
+            --cyan: #00d4ff;
+            --orange: #ff7a00;
+            --text-primary: #ffffff;
+            --text-secondary: #8899aa;
+            --grid-color: #1a3a5c;
+            --danger: #ff4d4f;
+            --success: #00d4a0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ===== 顶部导航栏 ===== */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            padding: 0 24px;
+            background: rgba(13, 31, 60, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-tabs-dark {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-tabs-dark li a {
+            display: block;
+            padding: 7px 16px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.25s;
+        }
+
+        .nav-tabs-dark li a:hover {
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .nav-tabs-dark li a.active {
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.15);
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.15);
+        }
+
+        .top-nav-center {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .top-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-page {
+            padding: 5px 14px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .btn-page:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+        }
+
+        .page-indicator {
+            color: var(--cyan);
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        /* ===== 主体内容 ===== */
+        .main-content {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        /* ===== 通用卡片 ===== */
+        .tech-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.12);
+            backdrop-filter: blur(4px);
+        }
+
+        .card-title-tech {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .card-title-tech::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: var(--cyan);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--cyan);
+        }
+
+        .card-title-orange::before { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+
+        .card-subtitle-tech {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        /* ===== 表格 ===== */
+        .table-dark-custom {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .table-dark-custom thead th {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--cyan);
+            font-weight: 600;
+            padding: 10px 8px;
+            border: 1px solid rgba(0, 212, 255, 0.18);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .table-dark-custom tbody td {
+            padding: 7px 8px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .table-dark-custom tbody tr:nth-child(even) {
+            background: rgba(0, 212, 255, 0.04);
+        }
+
+        .table-dark-custom tbody tr:hover {
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .table-dark-custom .text-cyan { color: var(--cyan); font-weight: 600; }
+        .table-dark-custom .text-orange { color: var(--orange); }
+        .table-dark-custom .text-success { color: var(--success); }
+        .table-dark-custom .text-danger { color: var(--danger); }
+        .table-dark-custom .total-row {
+            background: rgba(0, 212, 255, 0.08) !important;
+            font-weight: bold;
+        }
+
+        /* ===== 上排50/50 ===== */
+        .row-5050 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        /* ===== 下排40/60 ===== */
+        .row-4060 {
+            display: grid;
+            grid-template-columns: 2fr 3fr;
+            gap: 18px;
+        }
+
+        /* ===== 盈亏罚扣双表 ===== */
+        .dual-table-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .dual-table-wrap .mini-title {
+            font-size: 13px;
+            color: var(--cyan);
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        /* ===== 结算量卡片 ===== */
+        .settlement-table .table-dark-custom tbody td {
+            padding: 12px 8px;
+        }
+
+        /* ===== 图表 ===== */
+        .chart-container {
+            position: relative;
+            height: 260px;
+            width: 100%;
+        }
+
+        /* ===== 说明文字 ===== */
+        .note-blue {
+            color: #5599cc;
+            font-size: 12px;
+            line-height: 1.8;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(0, 180, 220, 0.06);
+            border-radius: 6px;
+            border-left: 3px solid #5599cc;
+        }
+
+        .note-purple {
+            color: #b08cd4;
+            font-size: 12px;
+            line-height: 1.8;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(160, 100, 220, 0.06);
+            border-radius: 6px;
+            border-left: 3px solid #b08cd4;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1400px) {
+            .row-5050, .row-4060 { grid-template-columns: 1fr; }
+            .dual-table-wrap { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== 主体区域（无顶部导航） ===== -->
+<div class="main-content">
+
+    <!-- ===== 上排：单体明细 + 盈亏罚扣 ===== -->
+    <div class="row-5050">
+
+        <!-- 左：单体明细 -->
+        <div class="tech-card">
+            <div class="card-title-tech">单体明细</div>
+            <div class="card-subtitle-tech">(无措施，吨)：清单收入 | 施工图预算 | 施工原料单 | 翻样措施筋 | 翻样二结构</div>
+            <div style="overflow-x:auto;">
+                <table class="table-dark-custom">
+                    <thead>
+                        <tr>
+                            <th>单体名称</th>
+                            <th>收入(上)</th>
+                            <th>预算</th>
+                            <th>翻样</th>
+                            <th>措施</th>
+                            <th>二构</th>
+                            <th>报量(分)</th>
+                            <th>结算(下)</th>
+                            <th>收支差</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in building_details %}
+                        <tr>
+                            <td class="text-cyan">{{ b.name }}</td>
+                            <td>{{ "%.1f"|format(b.income_upper) }}</td>
+                            <td>{{ "%.1f"|format(b.budget) }}</td>
+                            <td>{{ "%.1f"|format(b.detailing) }}</td>
+                            <td>{{ "%.1f"|format(b.measure) }}</td>
+                            <td>{{ "%.1f"|format(b.secondary) }}</td>
+                            <td>{{ "%.1f"|format(b.report_upper) }} / {{ "%.1f"|format(b.report_lower) }}</td>
+                            <td>{{ "%.1f"|format(b.settlement_upper) }} / {{ "%.1f"|format(b.settlement_lower) }}</td>
+                            <td class="{% if b.diff >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ "%+.1f"|format(b.diff) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 右：盈亏罚扣 -->
+        <div class="tech-card">
+            <div class="card-title-tech card-title-orange">盈亏罚扣</div>
+            <div class="card-subtitle-tech">支持新版WPS简化名测试显示</div>
+            <div class="dual-table-wrap">
+                <div>
+                    <div class="mini-title">分包单位 A 组</div>
+                    <table class="table-dark-custom">
+                        <thead>
+                            <tr><th>分包单位</th><th>累计罚扣</th><th>预算量</th><th>消耗量</th><th>效益量</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in profit_penalty_left %}
+                            <tr>
+                                <td class="text-cyan">{{ item.team }}</td>
+                                <td class="text-danger">{{ "%.0f"|format(item.penalty) }}</td>
+                                <td>{{ "%.1f"|format(item.budget) }}</td>
+                                <td>{{ "%.1f"|format(item.usage) }}</td>
+                                <td class="{% if item.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "%+.1f"|format(item.profit) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <div class="mini-title">分包单位 B 组</div>
+                    <table class="table-dark-custom">
+                        <thead>
+                            <tr><th>分包单位</th><th>累计罚扣</th><th>预算量</th><th>消耗量</th><th>效益量</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in profit_penalty_right %}
+                            <tr>
+                                <td class="text-cyan">{{ item.team }}</td>
+                                <td class="text-danger">{{ "%.0f"|format(item.penalty) }}</td>
+                                <td>{{ "%.1f"|format(item.budget) }}</td>
+                                <td>{{ "%.1f"|format(item.usage) }}</td>
+                                <td class="{% if item.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "%+.1f"|format(item.profit) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="note-blue">
+                <i class="bi bi-info-circle"></i>
+                项目{{ project_note }}开工建设；总建设工期{{ duration_note }}天；计划竣工日期{{ completion_note }}；建筑总面积{{ area_note }}；建筑功能：科研办公
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 下排：分包总结算量 + 分包报量预警 ===== -->
+    <div class="row-4060">
+
+        <!-- 左：分包总结算量 -->
+        <div class="tech-card settlement-table">
+            <div class="card-title-tech">分包总结算量</div>
+            <table class="table-dark-custom">
+                <thead>
+                    <tr><th>分包单位</th><th>结算量</th><th>收入量</th><th>偏差指标</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="text-cyan">主体外</td><td>0.000</td><td>0.000</td><td>0.000</td></tr>
+                    <tr><td class="text-cyan">主体内</td><td>0.000</td><td>0.000</td><td>0.000</td></tr>
+                    <tr class="total-row"><td>合计</td><td>{{ "%.3f"|format(summary.total_settlement) }}</td><td>0.000</td><td>0.000</td></tr>
+                </tbody>
+            </table>
+            <div class="note-purple">
+                <i class="bi bi-exclamation-circle"></i>
+                结算要求：收入与对下结算量应正偏差（收入>结算）为盈利，最高盈利20%；负偏差为亏损，最低亏损-3%。<br>
+                结算范围：预计收入总量1,000.000吨，目前结算阶段总量0.000吨，过程中持续结算。
+            </div>
+        </div>
+
+        <!-- 右：分包报量预警 -->
+        <div class="tech-card">
+            <div class="card-title-tech card-title-orange">分包报量预警</div>
+            <div class="chart-container">
+                <canvas id="reportWarningChart"></canvas>
+            </div>
+            <div style="display:flex;justify-content:center;gap:24px;margin-top:10px;font-size:12px;color:var(--text-secondary);">
+                <span><span style="display:inline-block;width:12px;height:12px;background:var(--orange);border-radius:2px;margin-right:4px;"></span>预算</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#f4d03f;border-radius:2px;margin-right:4px;"></span>翻样</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:var(--cyan);border-radius:2px;margin-right:4px;"></span>报量</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    Chart.defaults.color = '#8899aa';
+    Chart.defaults.borderColor = '#1a3a5c';
+    Chart.defaults.font.family = '"Microsoft YaHei", sans-serif';
+
+    var ctx = document.getElementById('reportWarningChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+            datasets: [
+                {
+                    label: '预算',
+                    data: [85, 88, 92, 95, 100, 105, 108, 112, 115, 118, 120, 122],
+                    borderColor: '#ff7a00',
+                    backgroundColor: 'rgba(255,122,0,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#ff7a00'
+                },
+                {
+                    label: '翻样',
+                    data: [82, 86, 90, 93, 97, 102, 105, 109, 112, 115, 117, 119],
+                    borderColor: '#f4d03f',
+                    backgroundColor: 'rgba(244,208,63,0.06)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#f4d03f'
+                },
+                {
+                    label: '报量',
+                    data: [40, 43, 45, 48, 50, 52, 54, 56, 58, 59, 60, 61],
+                    borderColor: '#00d4ff',
+                    backgroundColor: 'rgba(0,212,255,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#00d4ff'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(13,31,60,0.95)',
+                    titleColor: '#00d4ff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(0,212,255,0.3)',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + ctx.raw + ' T';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#1a3a5c', drawBorder: false },
+                    ticks: { color: '#8899aa', font: { size: 11 } }
+                },
+                y: {
+                    beginAtZero: false,
+                    grid: { color: '#1a3a5c', drawBorder: false },
+                    ticks: { color: '#8899aa', font: { size: 11 } },
+                    title: { display: true, text: '吨(T)', color: '#8899aa', font: { size: 11 } }
+                }
+            }
+        }
+    });
+})();
+</script>
+
+</body>
+</html>

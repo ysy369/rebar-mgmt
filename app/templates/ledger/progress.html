@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card_small, status_badge, data_table, empty_state %}
+{% block title %}形象进度 — {{ project.name }}{% endblock %}
+{% block page_title %}形象进度 — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+    <div class="col-md-3">{{ stat_card_small('模型总量 (kg)', total_model | format_kg(0), 'primary') }}</div>
+    <div class="col-md-3">{{ stat_card_small('进度量 (kg)', total_progress | format_kg(0), 'success') }}</div>
+    <div class="col-md-3">{{ stat_card_small('完成率', (total_progress/total_model*100 if total_model>0 else 0) | format_percent(1) ~ '%', 'warning') }}</div>
+    <div class="col-md-3">
+        <form method="GET" class="row g-1 p-2">
+            <div class="col-6"><input type="date" name="start" class="form-control form-control-sm" placeholder="开始"></div>
+            <div class="col-6"><input type="date" name="end" class="form-control form-control-sm" placeholder="结束"></div>
+            <div class="col-12 mt-1"><button class="btn btn-sm btn-primary w-100">统计</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- 添加表单 -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-plus-circle"></i> 添加进度数据</h6></div>
+    <div class="card-body py-2">
+        <form method="POST" action="{{ url_for('ledger.progress_add', project_id=project.id) }}" class="row g-1 align-items-end">
+            <div class="col-12 col-md-2"><input name="building_name" class="form-control form-control-sm" placeholder="楼栋*" required></div>
+            <div class="col-12 col-md-2"><input name="floor_name" class="form-control form-control-sm" placeholder="楼层"></div>
+            <div class="col-6 col-md-1"><input name="component_type" class="form-control form-control-sm" placeholder="构件"></div>
+            <div class="col-6 col-md-1"><select name="status" class="form-select form-select-sm"><option value="active">施工中</option><option value="done">已完成</option><option value="pending">未施工</option></select></div>
+            <div class="col-4 col-md-1"><input name="model_total" type="number" step="0.01" class="form-control form-control-sm" placeholder="模型量"></div>
+            <div class="col-4 col-md-1"><input name="progress_qty" type="number" step="0.01" class="form-control form-control-sm" placeholder="进度量"></div>
+            <div class="col-4 col-md-1"><input name="total_weight" type="number" step="0.01" class="form-control form-control-sm" placeholder="总重"></div>
+            <div class="col-12 col-md-1"><button class="btn btn-sm btn-primary w-100"><i class="bi bi-plus"></i></button></div>
+        </form>
+    </div>
+</div>
+
+<!-- 楼栋列表 -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-building"></i> 楼栋形象进度总览</h6></div>
+    <div class="card-body p-0">
+        {% call data_table(['楼栋', '模型总量(kg)', '进度量(kg)', '状态', '进度%', '操作']) %}
+            {% if buildings %}
+            {% for b in buildings %}<tr>
+                <td><a href="{{ url_for('ledger.progress_detail', project_id=project.id, building_name=b.building_name) }}"><strong>{{ b.building_name }}</strong></a></td>
+                <td class="text-end">{{ b.model_total or 0 | format_kg(0) }}</td>
+                <td class="text-end">{{ b.progress_qty or 0 | format_kg(0) }}</td>
+                <td>{{ status_badge(b.status, BUILDING_PROGRESS_STATUS_MAP) }}</td>
+                <td class="text-end">{{ (b.progress_qty/b.model_total*100 if b.model_total>0 else 0) | format_percent(1) }}%</td>
+                <td>
+                    <a href="{{ url_for('ledger.progress_detail', project_id=project.id, building_name=b.building_name) }}" class="btn btn-sm btn-outline-primary" aria-label="查看" title="查看"><i class="bi bi-eye"></i></a>
+                </td>
+            </tr>{% endfor %}
+            {% else %}
+            <tr><td colspan="6">{{ empty_state('building', '暂无数据，使用上方表单添加') }}</td></tr>
+            {% endif %}
+        {% endcall %}
+    </div>
+</div>
+{% endblock %}

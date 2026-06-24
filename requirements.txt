@@ -1,0 +1,27 @@
+# 钢筋精细化管理平台 — Python 依赖
+# 安装: pip install -r requirements.txt
+
+# Web 框架
+Flask==3.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+Flask-Login==0.6.3
+
+# 密码哈希
+bcrypt==4.2.1
+
+# Excel 处理
+pandas==2.2.3
+openpyxl==3.1.5
+
+# 数据库驱动
+PyMySQL==1.1.1
+
+# 加密（Session）
+cryptography==44.0.0
+
+# 生产 WSGI 服务器
+waitress==3.0.2
+
+# 环境变量管理
+python-dotenv==1.0.1

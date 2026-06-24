@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import data_table, render_pagination, empty_state, status_badge, confirm_delete_form, page_header %}
+{% block title %}{{ project.name }} — 料单台账{% endblock %}
+{% block page_title %}料单台账 — {{ project.name }}{% endblock %}
+{% block content %}
+{{ page_header('', url_for('project.cutting_order_create', project_id=project.id), '新建料单', 'plus-circle', 'btn-primary') }}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        {% call data_table(['料单号', '日期', '批次', '总根数', '总重(T)', '状态', '操作']) %}
+            {% if pagination.items %}
+            {% for o in pagination.items %}<tr>
+                <td>{{ o.order_no }}</td>
+                <td>{{ o.order_date.strftime('%Y-%m-%d') if o.order_date else '-' }}</td>
+                <td>{{ o.batch_no or '-' }}</td>
+                <td>{{ o.total_pieces or 0 }}</td>
+                <td>{{ o.total_weight | format_ton(3) }}</td>
+                <td>{{ status_badge(o.status, CUTTING_ORDER_STATUS_MAP) }}</td>
+                <td>
+                    <a href="{{ url_for('project.cutting_order_detail', project_id=project.id, order_id=o.id) }}" class="btn btn-sm btn-outline-primary" aria-label="查看" title="查看"><i class="bi bi-eye"></i></a>
+                    {% if o.status in ('draft','rejected') %}
+                    {{ confirm_delete_form(url_for('project.cutting_order_delete', project_id=project.id, order_id=o.id), message='确定删除料单 ' ~ o.order_no ~ ' 吗？') }}
+                    {% endif %}
+                </td>
+            </tr>{% endfor %}
+            {% else %}
+            <tr><td colspan="7">{{ empty_state('inbox', '暂无料单') }}</td></tr>
+            {% endif %}
+        {% endcall %}
+    </div>
+    <div class="card-footer bg-white">{{ render_pagination(pagination, 'project.cutting_order_list', {'project_id': project.id}) }}</div>
+</div>
+{% endblock %}

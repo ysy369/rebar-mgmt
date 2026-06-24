@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, data_table, empty_state, confirm_delete_form %}
+{% block title %}料单 {{ order.order_no }}{% endblock %}
+{% block page_title %}料单详情 — {{ order.order_no }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <!-- 料单信息 -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0">料单信息</h5></div>
+      <div class="card-body">
+        <p><strong>料单号:</strong> {{ order.order_no }}</p>
+        <p><strong>日期:</strong> {{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</p>
+        <p><strong>批次:</strong> {{ order.batch_no or '-' }}</p>
+        <p><strong>使用部位:</strong> {{ order.use_location or '-' }}</p>
+        <p><strong>劳务队:</strong> {{ order.labor_team or '-' }}</p>
+        <p><strong>总根数:</strong> {{ order.total_pieces or 0 }}</p>
+        <p><strong>总重(T):</strong> {{ order.total_weight | format_ton(3) }}</p>
+        <p><strong>状态:</strong> {{ status_badge(order.status, CUTTING_ORDER_STATUS_MAP) }}</p>
+        {% if order.status in ('draft','rejected') %}
+        <form method="POST" action="{{ url_for('project.cutting_order_submit', project_id=project.id, order_id=order.id) }}" class="mt-2">
+          <button class="btn btn-success btn-sm w-100"><i class="bi bi-send"></i> 提交审核</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- 明细行 -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">明细行 ({{ items|length }})</h5>
+        {% if order.status in ('draft','rejected') %}
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addItemModal">
+          <i class="bi bi-plus"></i> 添加明细
+        </button>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% call data_table(['#', '规格', '直径', '下料(mm)', '根数', '单重(kg)', '总重(kg)', '构件', '操作']) %}
+            {% if items %}
+            {% for it in items %}<tr>
+                <td>{{ it.line_no }}</td>
+                <td>{{ it.spec }}</td>
+                <td>{{ it.rebar_diameter or '-' }}</td>
+                <td>{{ it.cut_length | format_ton(1) if it.cut_length else '-' }}</td>
+                <td>{{ it.piece_count or 0 }}</td>
+                <td>{{ it.unit_weight | format_ton(3) if it.unit_weight else '-' }}</td>
+                <td>{{ it.total_weight | format_ton(3) if it.total_weight else '-' }}</td>
+                <td>{{ it.component_name or '-' }}</td>
+                <td>
+                    {% if order.status in ('draft','rejected') %}
+                    {{ confirm_delete_form(url_for('project.cutting_order_delete_item', project_id=project.id, order_id=order.id, item_id=it.id), message='确定删除该明细行？') }}
+                    {% endif %}
+                </td>
+            </tr>{% endfor %}
+            {% else %}
+            <tr><td colspan="9">{{ empty_state('inbox', '暂无明细') }}</td></tr>
+            {% endif %}
+        {% endcall %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if order.status in ('draft','rejected') %}
+<!-- 添加明细 Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('project.cutting_order_add_item', project_id=project.id, order_id=order.id) }}">
+        <div class="modal-header"><h5 class="modal-title">添加明细行</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-6"><label class="form-label">规格</label><input type="text" name="spec" class="form-control" placeholder="HRB400E 12" required></div>
+            <div class="col-6"><label class="form-label">级别直径</label><input type="text" name="rebar_diameter" class="form-control" placeholder="12"></div>
+            <div class="col-4"><label class="form-label">下料(mm)</label><input type="number" step="0.1" name="cut_length" class="form-control"></div>
+            <div class="col-4"><label class="form-label">根数</label><input type="number" name="piece_count" class="form-control"></div>
+            <div class="col-4"><label class="form-label">单重(kg/m)</label><input type="number" step="0.001" name="unit_weight" class="form-control" value="0.888"></div>
+            <div class="col-6"><label class="form-label">构件</label><input type="text" name="component_name" class="form-control"></div>
+            <div class="col-6"><label class="form-label">简图</label><input type="text" name="rebar_shape" class="form-control"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">添加</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

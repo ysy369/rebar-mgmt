@@ -1,0 +1,26 @@
+{% extends "ledger/base_ledger.html" %}
+{% from "_macros.html" import data_table, empty_state %}
+{% set title = "进场台账" %}{% set import_type = "incoming" %}{% set total_label = "进场总量" %}{% set unit_label = "吨(T)" if unit=='T' else "公斤(kg)" %}
+{% block table %}
+{% call data_table(['日期', '品牌', '规格', '品名', '件数', '理论重(T)', '过磅重(T)', '车牌', '劳务队', '使用部位']) %}
+    {% if items %}
+    {% for i in items %}<tr>
+        <td>{{ i.date.strftime('%Y-%m-%d') if i.date else '-' }}</td>
+        <td>{{ i.brand or '-' }}</td>
+        <td>{{ i.spec or '-' }}</td>
+        <td>{{ i.product_name or '-' }}</td>
+        <td class="text-end">{{ i.piece_count or 0 }}</td>
+        <td class="text-end">{{ i.theory_weight | format_ton }}</td>
+        <td class="text-end fw-bold">{{ i.display_weight | format_ton }}</td>
+        <td>{{ i.plate_no or '-' }}</td>
+        <td>{{ i.labor_team or '-' }}</td>
+        <td class="small">{{ i.use_location or '-' }}</td>
+    </tr>{% endfor %}
+    {% else %}
+    <tr><td colspan="10">{{ empty_state('inbox', '暂无进场记录', '您可以通过上方"导入"按钮批量导入 Excel 数据') }}</td></tr>
+    {% endif %}
+{% endcall %}
+{% endblock %}
+{% block cross_links %}
+<div class="mt-2 small"><a href="{{ url_for('ledger.transfer_list', project_id=project.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-arrow-right"></i> 查看调拨台账</a></div>
+{% endblock %}

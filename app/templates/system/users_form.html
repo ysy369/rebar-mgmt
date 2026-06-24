@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="POST">
+                    {{ csrf_field|safe }}
+                    <div class="mb-3">
+                        <label class="form-label">账号</label>
+                        <input type="text" name="username" class="form-control" value="{{ user.username if user else '' }}" {% if user %}readonly{% endif %} required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">姓名</label>
+                        <input type="text" name="display_name" class="form-control" value="{{ user.display_name if user else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码{% if user %}<small class="text-muted">（留空表示不修改）</small>{% endif %}</label>
+                        <input type="password" name="password" class="form-control" {% if not user %}required{% endif %}>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">角色</label>
+                        <select name="role" class="form-select">
+                            <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>管理员</option>
+                            <option value="user" {% if not user or user.role == 'user' %}selected{% endif %}>工程师</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">保存</button>
+                        <a href="{{ url_for('system.user_list') }}" class="btn btn-outline-secondary">返回</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

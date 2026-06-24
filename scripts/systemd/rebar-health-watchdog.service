@@ -1,0 +1,12 @@
+[Unit]
+Description=钢筋精细化管理平台健康看门狗
+Documentation=https://github.com/rebar-mgmt/rebar-mgmt
+Requires=docker.service
+After=docker.service rebar-mgmt.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/rebar-mgmt
+ExecStart=/opt/rebar-mgmt/scripts/rebar-health-watchdog.sh
+StandardOutput=journal
+StandardError=journal

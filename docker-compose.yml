@@ -1,0 +1,77 @@
+# ============================================
+# 钢筋精细化管理平台 — Docker Compose
+# ============================================
+
+services:
+  # ========== MySQL 数据库 ==========
+  db:
+    image: mysql:8.0
+    container_name: rebar-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RebarMgmt2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-rebar_mgmt}
+      MYSQL_USER: ${MYSQL_USER:-rebar}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-RebarMgmt2026}
+      TZ: Asia/Shanghai
+    # MySQL 端口仅内部使用，不暴露到宿主机
+    # ports:
+    #   - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-RebarMgmt2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ========== Flask 应用 ==========
+  app:
+    build: .
+    container_name: rebar-app
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-rebar}:${MYSQL_PASSWORD:-RebarMgmt2026}@db:3306/${MYSQL_DATABASE:-rebar_mgmt}?charset=utf8mb4
+      TZ: Asia/Shanghai
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./exports:/app/exports
+      - ./status:/app/status
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - autoheal=true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ========== 容器不健康时自动重启 ==========
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: rebar-autoheal
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_INTERVAL: 5
+      AUTOHEAL_START_PERIOD: 30
+      AUTOHEAL_DEFAULT_STOP_TIMEOUT: 10
+      AUTOHEAL_ONLY_MONITOR_RUNNING: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  mysql_data:

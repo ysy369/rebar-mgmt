@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, confirm_delete_form, empty_state %}
+{% block title %}{{ project.name }} — 方样料单导入{% endblock %}
+{% block page_title %}方样料单导入 — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <!-- 上传区 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h5 class="card-title mb-0"><i class="bi bi-cloud-upload"></i> 批量上传方样料单</h5></div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="upload-zone border border-2 border-dashed rounded-3 p-5 text-center mb-3" id="dropZone">
+                        <i class="bi bi-file-earmark-excel" style="font-size:3rem;color:#198754;"></i>
+                        <p class="mt-2 mb-1 fw-bold">点击选择或拖拽文件到此处</p>
+                        <small class="text-muted">支持 .xls / .xlsx 格式，可多选</small>
+                    </div>
+                    <input type="file" name="files" id="fileInput" class="d-none" multiple accept=".xls,.xlsx" onchange="updateFileListDom('fileInput', 'fileList', 'submitBtn')">
+                    <div id="fileList" class="mb-3 small"></div>
+                    <button type="submit" class="btn btn-primary w-100" id="submitBtn" disabled>
+                        <i class="bi bi-upload"></i> 开始导入
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 说明 -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h5 class="card-title mb-0"><i class="bi bi-info-circle"></i> 文件格式说明</h5></div>
+            <div class="card-body">
+                <h6>文件名格式</h6>
+                <p><code>项目名 楼层 区域 构件类型.xlsx</code></p>
+                <p class="text-muted small">例：<kbd>跨建-CIC4#科研中心 第1层 C区 柱.xlsx</kbd></p>
+                <hr>
+                <h6>Excel 表格格式</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered small">
+                        <thead><tr><th>编号</th><th>6</th><th>8</th><th>10</th><th>12</th><th>14</th><th>16</th><th>18</th><th>20</th><th>22</th><th>25</th><th>28</th><th>32</th></tr></thead>
+                        <tbody><tr><td>KZ1</td><td>0</td><td>0</td><td>1.2</td><td>3.5</td><td>2.1</td><td>0</td><td>5.3</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr></tbody>
+                    </table>
+                </div>
+                <small class="text-muted">表头行为钢筋直径（6-32mm），数据行 = 构件名 + 各直径重量（吨）</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入历史 -->
+<div class="card border-0 shadow-sm mt-3">
+    <div class="card-header bg-white"><h5 class="card-title mb-0"><i class="bi bi-clock-history"></i> 导入历史</h5></div>
+    <div class="card-body p-0">
+        {% if batches %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 small">
+                <thead class="table-light"><tr><th>文件名</th><th>时间</th><th>成功</th><th>失败</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for b in batches %}<tr>
+                    <td>{{ b.file_name }}</td>
+                    <td>{{ b.created_at.strftime('%m-%d %H:%M') if b.created_at else '-' }}</td>
+                    <td class="text-success">{{ b.imported_count }}</td>
+                    <td class="text-danger">{{ b.failed_count }}</td>
+                    <td>{{ status_badge(b.status, IMPORT_BATCH_STATUS_MAP) }}</td>
+                    <td>
+                        {% if b.source_path %}
+                        <a href="{{ url_for('bom.download_source', project_id=b.project_id, batch_id=b.id) }}" class="btn btn-sm btn-outline-secondary" aria-label="下载源文件" title="下载源文件"><i class="bi bi-download"></i></a>
+                        {% endif %}
+                        {{ confirm_delete_form(url_for('bom.delete_import_batch', project_id=project.id, batch_id=b.id), message='确定删除此批次？相关数据也会被删除。') }}
+                    </td>
+                </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        {{ empty_state('clock-history', '暂无导入记录') }}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var dz = document.getElementById('dropZone');
+    var fileInput = document.getElementById('fileInput');
+    dz.addEventListener('click', function() { fileInput.click(); });
+    dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.style.borderColor = '#FF7A00'; });
+    dz.addEventListener('dragleave', function(e) { dz.style.borderColor = '#dee2e6'; });
+    dz.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dz.style.borderColor = '#dee2e6';
+        fileInput.files = e.dataTransfer.files;
+        updateFileListDom('fileInput', 'fileList', 'submitBtn');
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "ledger/base_ledger.html" %}
+{% from "_macros.html" import data_table, empty_state, status_badge %}
+{% set title = "调拨台账" %}{% set import_type = "transfer" %}{% set total_label = "调拨总量" %}{% set unit_label = "吨(T)" if unit=='T' else "公斤(kg)" %}
+{% block table %}
+{% call data_table(['日期', '类型', '方向', '调入项目', '规格', '构件', '件数', '重量', '备注']) %}
+    {% if items %}
+    {% for i in items %}<tr>
+        <td>{{ i.date.strftime('%Y-%m-%d') if i.date else '-' }}</td>
+        <td>{{ status_badge(i.transfer_type, TRANSFER_TYPE_MAP) }}</td>
+        <td>{{ status_badge(i.direction, TRANSFER_DIRECTION_MAP) }}</td>
+        <td>{{ i.to_project or '-' }}</td>
+        <td>{{ i.spec or '-' }}</td>
+        <td>{{ i.component_name or '-' }}</td>
+        <td class="text-end">{{ i.piece_count or 0 }}</td>
+        <td class="text-end fw-bold">{{ i.display_weight | format_ton }}</td>
+        <td class="small">{{ i.remark or '-' }}</td>
+    </tr>{% endfor %}
+    {% else %}
+    <tr><td colspan="9">{{ empty_state('inbox', '暂无调拨记录') }}</td></tr>
+    {% endif %}
+{% endcall %}
+{% endblock %}

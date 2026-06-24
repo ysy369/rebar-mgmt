@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, confirm_delete_form, empty_state %}
+{% block title %}方样料单批次审核{% endblock %}
+{% block page_title %}方样料单批次审核{% endblock %}
+{% block content %}
+<div class="row g-2 mb-3">
+    <div class="col-auto"><a href="?status=done" class="btn btn-sm btn-outline-info {% if current_status=='done' %}active{% endif %}">待审核</a></div>
+    <div class="col-auto"><a href="?status=approved" class="btn btn-sm btn-outline-success {% if current_status=='approved' %}active{% endif %}">已通过</a></div>
+    <div class="col-auto"><a href="?status=rejected" class="btn btn-sm btn-outline-danger {% if current_status=='rejected' %}active{% endif %}">已驳回</a></div>
+    <div class="col-auto"><a href="?" class="btn btn-sm btn-outline-secondary">全部</a></div>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        {% if batches %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light"><tr><th>文件名</th><th>项目</th><th>导入时间</th><th>成功/失败</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>
+                {% for b in batches %}<tr>
+                    <td>{{ b.file_name }}</td>
+                    <td>{{ b.project.name if b.project else '-' }}</td>
+                    <td>{{ b.created_at.strftime('%m-%d %H:%M') if b.created_at else '-' }}</td>
+                    <td><span class="text-success">{{ b.imported_count }}</span> / <span class="text-danger">{{ b.failed_count }}</span></td>
+                    <td>{{ status_badge(b.status, IMPORT_BATCH_STATUS_MAP) }}</td>
+                    <td>
+                        {% if b.status == 'done' %}
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#reviewModal{{ b.id }}"><i class="bi bi-check-circle"></i> 审核</button>
+                        {% endif %}
+                        {% if b.status in ('approved','rejected') and b.review_comment %}
+                        <small class="text-muted">{{ b.review_comment[:20] }}</small>
+                        {% endif %}
+                        {% if b.source_path %}
+                        <a href="{{ url_for('bom.download_source', project_id=b.project_id, batch_id=b.id) }}" class="btn btn-sm btn-outline-secondary" aria-label="下载源文件" title="下载源文件"><i class="bi bi-download"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if b.status == 'done' %}
+                <div class="modal fade" id="reviewModal{{ b.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('bom.admin_review_action', batch_id=b.id) }}">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">审核批次 — {{ b.file_name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>成功: {{ b.imported_count }} | 失败: {{ b.failed_count }}</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">审核意见</label>
+                                        <textarea name="comment" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button name="action" value="rejected" class="btn btn-danger"><i class="bi bi-x-circle"></i> 驳回</button>
+                                    <button name="action" value="approved" class="btn btn-success"><i class="bi bi-check-circle"></i> 通过</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}{{ empty_state('inbox', '暂无审核记录') }}{% endif %}
+    </div>
+</div>
+{% endblock %}

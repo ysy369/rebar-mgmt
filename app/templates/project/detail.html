@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ project.name }} — 项目详情{% endblock %}
+{% block page_title %}<a href="{{ url_for('admin.project_list') if current_user.is_admin else url_for('project.dashboard') }}" class="btn btn-link text-decoration-none ps-0"><i class="bi bi-chevron-left"></i></a> {{ project.name }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 项目详情页 Tab 导航 */
+.project-detail-tabs {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0 24px;
+    margin-bottom: 24px;
+}
+
+.project-detail-tabs .nav {
+    gap: 24px;
+}
+
+.project-detail-tabs .nav-link {
+    color: #6c757d;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 14px 4px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.project-detail-tabs .nav-link:hover {
+    color: #495057;
+}
+
+.project-detail-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom-color: #0d6efd;
+}
+
+/* Tab 内容区 */
+.tab-section {
+    display: none;
+    animation: fadeIn 0.25s ease;
+}
+
+.tab-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 基础信息卡片 */
+.info-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.info-row {
+    display: flex;
+    gap: 48px;
+    margin-bottom: 16px;
+}
+
+.info-item {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.info-label {
+    color: #6c757d;
+    font-size: 14px;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.info-value {
+    color: #212529;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 汇总卡片 */
+.summary-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+.summary-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.summary-card .title {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.summary-card .value {
+    color: #212529;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.summary-card .link {
+    font-size: 14px;
+    color: #0d6efd;
+}
+
+.summary-card .link:hover {
+    text-decoration: underline;
+}
+
+/* 大字指标 */
+.big-metric {
+    text-align: center;
+    padding: 20px;
+}
+
+.big-metric .value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.big-metric .label {
+    color: #6c757d;
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+/* 效果图 */
+.cover-image {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.attachment-thumb {
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* 成员角色 Tab */
+.member-role-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.member-role-tabs .btn {
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+/* 成本表格 */
+.cost-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Tab 导航 -->
+<div class="project-detail-tabs">
+    <ul class="nav" id="projectDetailTabs">
+        <li class="nav-item"><a class="nav-link" href="#overview" data-tab="overview">项目概况</a></li>
+        <li class="nav-item"><a class="nav-link" href="#members" data-tab="members">人员管理</a></li>
+        <li class="nav-item"><a class="nav-link" href="#ledgers" data-tab="ledgers">数据台账</a></li>
+        <li class="nav-item"><a class="nav-link" href="#settlement" data-tab="settlement">结算分析</a></li>
+        <li class="nav-item"><a class="nav-link" href="#profit" data-tab="profit">盈亏分析</a></li>
+    </ul>
+</div>
+
+<!-- Tab 内容 -->
+<div class="tab-content-wrapper">
+    <div id="overview" class="tab-section {% if active_tab == 'overview' %}active{% endif %}">
+        {% include "project/detail_overview.html" %}
+    </div>
+    <div id="members" class="tab-section {% if active_tab == 'members' %}active{% endif %}">
+        {% include "project/detail_members.html" %}
+    </div>
+    <div id="ledgers" class="tab-section {% if active_tab == 'ledgers' %}active{% endif %}">
+        {% include "project/detail_ledgers.html" %}
+    </div>
+    <div id="settlement" class="tab-section {% if active_tab == 'settlement' %}active{% endif %}">
+        {% include "project/detail_settlement.html" %}
+    </div>
+    <div id="profit" class="tab-section {% if active_tab == 'profit' %}active{% endif %}">
+        {% include "project/detail_profit.html" %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    var tabs = document.querySelectorAll('#projectDetailTabs .nav-link');
+    var sections = document.querySelectorAll('.tab-section');
+
+    function activateTab(tabName) {
+        tabs.forEach(function(link) {
+            link.classList.toggle('active', link.getAttribute('data-tab') === tabName);
+        });
+        sections.forEach(function(section) {
+            section.classList.toggle('active', section.id === tabName);
+        });
+        // 初始化利润图表（仅在首次切换到 profit Tab 时）
+        if (tabName === 'profit' && typeof window.initProfitChart === 'function') {
+            window.initProfitChart();
+        }
+    }
+
+    // 根据 URL hash 或后端传入的 active_tab 初始化
+    var initialTab = window.location.hash ? window.location.hash.substring(1) : '{{ active_tab }}';
+    if (!document.getElementById(initialTab)) {
+        initialTab = 'overview';
+    }
+    activateTab(initialTab);
+
+    // 点击 Tab 时更新 hash 并切换
+    tabs.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            var tabName = this.getAttribute('data-tab');
+            activateTab(tabName);
+            window.location.hash = tabName;
+            // 阻止默认锚点跳转导致的页面跳动
+            e.preventDefault();
+        });
+    });
+
+    // 处理浏览器前进/后退
+    window.addEventListener('hashchange', function() {
+        var tabName = window.location.hash ? window.location.hash.substring(1) : 'overview';
+        if (document.getElementById(tabName)) {
+            activateTab(tabName);
+        }
+    });
+})();
+</script>
+{% endblock %}

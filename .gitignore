@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads & Exports
+uploads/*
+exports/*
+!uploads/.gitkeep
+!exports/.gitkeep
+
+# Test data / reference documents (large binary files)
+tests/*.xlsx
+tests/*.xls
+tests/*.docx
+tests/*.pptx
+tests/*.mp4
+tests/*.pdf
+tests/*.png
+tests/*.jpg
+tests/待确认/
+tests/成本管理页面参考图/
+
+# Logs
+logs/*
+*.log
+
+# Docker
+*.tar.gz
+
+# Claude
+.claude/

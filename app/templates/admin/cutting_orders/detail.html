@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, data_table, empty_state %}
+{% block title %}审核料单 {{ order.order_no }}{% endblock %}
+{% block page_title %}审核料单 — {{ order.order_no }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0">料单信息</h5></div>
+      <div class="card-body">
+        <p><strong>料单号:</strong> {{ order.order_no }}</p>
+        <p><strong>项目:</strong> {{ project.name if project else '-' }}</p>
+        <p><strong>日期:</strong> {{ order.order_date.strftime('%Y-%m-%d') if order.order_date else '-' }}</p>
+        <p><strong>批次:</strong> {{ order.batch_no or '-' }}</p>
+        <p><strong>使用部位:</strong> {{ order.use_location or '-' }}</p>
+        <p><strong>总根数:</strong> {{ order.total_pieces or 0 }}</p>
+        <p><strong>总重(T):</strong> {{ order.total_weight | format_ton(3) }}</p>
+        <p><strong>状态:</strong> {{ status_badge(order.status, CUTTING_ORDER_STATUS_MAP) }}</p>
+
+        {% if order.status in ('submitted','reviewed') %}
+        <hr>
+        <form method="POST" action="{{ url_for('admin.cutting_order_review', order_id=order.id) }}">
+          <div class="mb-3">
+            <label class="form-label">审核意见</label>
+            <textarea name="comment" class="form-control" rows="3" placeholder="审核意见(可选)">{{ order.review_comment or '' }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            {% if order.status == 'submitted' %}
+            <button name="action" value="reviewed" class="btn btn-warning w-100"><i class="bi bi-check-square"></i> 标记为已审核</button>
+            {% else %}
+            <button name="action" value="approved" class="btn btn-success flex-fill"><i class="bi bi-check-circle"></i> 通过</button>
+            <button name="action" value="rejected" class="btn btn-danger flex-fill"><i class="bi bi-x-circle"></i> 驳回</button>
+            {% endif %}
+          </div>
+        </form>
+        {% endif %}
+        {% if order.status in ('approved','rejected') and order.review_comment %}
+        <hr><p><strong>审核意见:</strong> {{ order.review_comment }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0">明细行 ({{ items|length }})</h5></div>
+      <div class="card-body p-0">
+        {% call data_table(['#', '规格', '直径', '下料(mm)', '根数', '单重(kg)', '总重(kg)', '构件']) %}
+          {% if items %}
+          {% for it in items %}<tr>
+            <td>{{ it.line_no }}</td>
+            <td>{{ it.spec }}</td>
+            <td>{{ it.rebar_diameter or '-' }}</td>
+            <td>{{ it.cut_length | format_ton(1) if it.cut_length else '-' }}</td>
+            <td>{{ it.piece_count or 0 }}</td>
+            <td>{{ it.unit_weight | format_ton(3) if it.unit_weight else '-' }}</td>
+            <td>{{ it.total_weight | format_ton(3) if it.total_weight else '-' }}</td>
+            <td>{{ it.component_name or '-' }}</td>
+          </tr>{% endfor %}
+          {% else %}
+          <tr><td colspan="8">{{ empty_state('inbox', '暂无明细') }}</td></tr>
+          {% endif %}
+        {% endcall %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

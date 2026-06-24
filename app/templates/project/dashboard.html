@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card %}
+{% block title %}项目数据看板 — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}项目数据看板{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        {{ stat_card('项目数量', stats.project_count, 'building', 'primary') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('预算总量', "%.1f"|format(stats.contract_qty) ~ ' T', 'clipboard-data', 'info') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('使用总量', "%.1f"|format(stats.usage_qty) ~ ' T', 'box-seam', 'warning') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('节约总量', "%.1f"|format(stats.saved_qty) ~ ' T', 'graph-up-arrow', 'success') }}
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-list"></i> 项目列表快捷入口</h6>
+    </div>
+    <div class="card-body">
+        {% if projects %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>项目名称</th>
+                        <th>甲方单位</th>
+                        <th>承接公司</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td><strong>{{ project.name }}</strong></td>
+                        <td>{{ project.client_unit.name if project.client_unit else '-' }}</td>
+                        <td>{{ project.contractor.name if project.contractor else '-' }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('project.detail', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> 详情
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-folder2-open" style="font-size:3rem;"></i>
+            <p class="mt-2">暂无项目</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

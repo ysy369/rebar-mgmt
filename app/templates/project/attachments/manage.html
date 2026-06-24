@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty_state, confirm_delete_form %}
+{% block title %}{{ project.name }} — 效果图管理{% endblock %}
+{% block page_title %}效果图管理 — {{ project.name }}{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0"><i class="bi bi-upload"></i> 上传效果图</h5></div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('project.attachment_upload', project_id=project.id) }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <img id="imgPreview" src="" class="img-fluid rounded mb-2 d-none" style="max-height:200px;">
+            <label class="form-label">选择图片</label>
+            <input type="file" name="file" class="form-control" accept="image/*" required data-preview="imgPreview">
+            <small class="text-muted">支持 JPG/PNG/GIF/WEBP，单文件不超过 10MB</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">描述（可选）</label>
+            <input type="text" name="description" class="form-control" placeholder="如：建筑外观效果图">
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-cloud-upload"></i> 上传</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h5 class="card-title mb-0"><i class="bi bi-images"></i> 效果图列表 ({{ attachments|length }})</h5></div>
+      <div class="card-body">
+        {% if attachments %}
+        <div class="row g-3">
+          {% for att in attachments %}
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="row g-0">
+                <div class="col-5">
+                  <img src="{{ url_for('project.attachment_file', project_id=project.id, att_id=att.id) }}" class="img-fluid rounded-start" style="height:120px;width:100%;object-fit:cover;" alt="{{ att.file_name }}">
+                </div>
+                <div class="col-7">
+                  <div class="card-body p-2">
+                    <small class="fw-bold text-truncate d-block" title="{{ att.file_name }}">{{ att.file_name }}</small>
+                    <small class="text-muted">{{ (att.file_size / 1024)|round|int if att.file_size else 0 }} KB</small>
+                    {% if att.description %}<br><small class="text-muted">{{ att.description }}</small>{% endif %}
+                    {% if att.is_cover %}<br><span class="badge bg-warning text-dark">封面</span>{% endif %}
+                    <div class="mt-2 d-flex gap-1">
+                      {% if not att.is_cover %}
+                      <form method="POST" action="{{ url_for('project.attachment_set_cover', project_id=project.id, att_id=att.id) }}" style="display:inline">
+                        <button class="btn btn-sm btn-outline-warning"><i class="bi bi-star"></i> 设封面</button>
+                      </form>
+                      {% endif %}
+                      {{ confirm_delete_form(url_for('project.attachment_delete', project_id=project.id, att_id=att.id), message='确定删除 ' ~ att.file_name ~ ' 吗？') }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        {{ empty_state('image', '暂无效果图', '点击左侧上传区域添加项目效果图') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

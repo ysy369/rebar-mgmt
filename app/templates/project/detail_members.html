@@ -1,0 +1,186 @@
+<!-- Tab2: 人员管理 -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0"><i class="bi bi-people"></i> 项目成员</h5>
+        {% if can_manage_members %}
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+            <i class="bi bi-plus-lg"></i> 添加成员
+        </button>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <!-- 角色 Tab -->
+        <div class="member-role-tabs">
+            <a href="{{ url_for('project.detail', project_id=project.id, tab='members') }}"
+               class="btn btn-sm {{ 'btn-primary' if not member_role else 'btn-outline-secondary' }}">全部</a>
+            {% for role_key, role_info in member_role_map.items() %}
+            <a href="{{ url_for('project.detail', project_id=project.id, tab='members', role=role_key) }}"
+               class="btn btn-sm {{ 'btn-' ~ role_info.color if member_role == role_key else 'btn-outline-secondary' }}">{{ role_info.label }}</a>
+            {% endfor %}
+        </div>
+
+        <!-- 搜索 -->
+        <form method="GET" action="{{ url_for('project.detail', project_id=project.id, tab='members') }}"
+              class="row g-2 align-items-end mb-3">
+            <input type="hidden" name="tab" value="members">
+            {% if member_role %}
+            <input type="hidden" name="role" value="{{ member_role }}">
+            {% endif %}
+            <div class="col-auto">
+                <label class="form-label small mb-0">成员名称/账号</label>
+                <input type="text" name="search" value="{{ member_search }}" class="form-control form-control-sm" placeholder="请输入...">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i> 搜索</button>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('project.detail', project_id=project.id, tab='members') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> 重置</a>
+            </div>
+        </form>
+
+        <!-- 成员表格 -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40px;"><input type="checkbox" class="form-check-input" id="selectAllMembers"></th>
+                        <th>姓名</th>
+                        <th>账号</th>
+                        <th>角色</th>
+                        <th>添加时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if members %}
+                        {% for member in members %}
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input member-checkbox" value="{{ member.user_id }}"></td>
+                            <td>{{ member.user.display_name }}</td>
+                            <td>{{ member.user.username }}</td>
+                            <td>
+                                {% set role_info = member_role_map.get(member.role, {'label': member.role, 'color': 'secondary'}) %}
+                                <span class="badge bg-{{ role_info.color }}">{{ role_info.label }}</span>
+                            </td>
+                            <td>{{ member.created_at.strftime('%Y-%m-%d') if member.created_at else '-' }}</td>
+                            <td>
+                                {% if can_manage_members %}
+                                <form method="POST" action="{{ url_for('project.detail_member_remove', project_id=project.id, user_id=member.user_id) }}" class="d-inline confirm-delete-form" data-message="确定移除成员 {{ member.user.display_name }}？">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-person-x"></i> 移除
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1"></i>
+                                <p class="mt-2 mb-0">暂无成员</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if can_manage_members and members %}
+        <div class="d-flex align-items-center gap-2 mt-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" id="batchRemoveMembers" disabled>
+                <i class="bi bi-trash"></i> 批量移除
+            </button>
+            <span class="text-muted small" id="selectedCount">已选择 0 人</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if can_manage_members %}
+<!-- 添加成员 Modal -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('project.detail_member_add', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加项目成员</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择用户 <span class="text-danger">*</span></label>
+                        <select name="user_id" class="form-select" required>
+                            <option value="">-- 请选择用户 --</option>
+                            {% for u in available_users %}
+                            <option value="{{ u.id }}">{{ u.display_name }} ({{ u.username }}){% if u.is_admin %} [管理员]{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">成员角色</label>
+                        <select name="role" class="form-select">
+                            {% for role_key, role_info in member_role_map.items() %}
+                            <option value="{{ role_key }}" {{ 'selected' if role_key == 'engineer' }}">{{ role_info.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 确定添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    var selectAll = document.getElementById('selectAllMembers');
+    var checkboxes = document.querySelectorAll('.member-checkbox');
+    var batchBtn = document.getElementById('batchRemoveMembers');
+    var selectedCount = document.getElementById('selectedCount');
+
+    function updateBatchState() {
+        var checked = document.querySelectorAll('.member-checkbox:checked');
+        if (batchBtn) {
+            batchBtn.disabled = checked.length === 0;
+        }
+        if (selectedCount) {
+            selectedCount.textContent = '已选择 ' + checked.length + ' 人';
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+            updateBatchState();
+        });
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateBatchState);
+    });
+
+    // 批量移除：目前仅做前端提示，如需完整实现可扩展为循环提交
+    if (batchBtn) {
+        batchBtn.addEventListener('click', function() {
+            var checked = document.querySelectorAll('.member-checkbox:checked');
+            if (checked.length === 0) return;
+            if (!confirm('确定移除选中的 ' + checked.length + ' 位成员吗？')) return;
+            var baseUrl = '{{ url_for("project.detail_member_remove", project_id=project.id, user_id=0) }}';
+            checked.forEach(function(cb) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = baseUrl.replace('/members/0/remove', '/members/' + cb.value + '/remove');
+                document.body.appendChild(form);
+                form.submit();
+            });
+        });
+    }
+})();
+</script>
+{% endif %}

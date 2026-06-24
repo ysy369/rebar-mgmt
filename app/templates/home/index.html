@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stat_card %}
+{% block title %}首页 — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}首页{% endblock %}
+{% block page_header %}{% endblock %}
+{% block content %}
+
+<style>
+    /* ===== 筛选栏 ===== */
+    .home-filter-bar {
+        background: #fff;
+        border-radius: 10px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        margin-bottom: 16px;
+    }
+    .home-filter-bar .form-select,
+    .home-filter-bar .form-control {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        font-size: 13px;
+    }
+    .btn-filter-query {
+        background: #1a3c6e;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 18px;
+        font-size: 13px;
+    }
+    .btn-filter-query:hover { background: #152d52; color: #fff; }
+    .btn-filter-reset {
+        background: #fff;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 6px 18px;
+        font-size: 13px;
+    }
+    .btn-filter-reset:hover { background: #f8f9fa; }
+
+    /* ===== 深色 KPI 卡片 ===== */
+    .dark-kpi-card {
+        background: rgba(13, 31, 60, 0.92);
+        border: 1px solid rgba(0, 212, 255, 0.25);
+        border-radius: 12px;
+        padding: 18px;
+        color: #fff;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.12);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .dark-kpi-card:hover {
+        box-shadow: 0 0 22px rgba(0, 212, 255, 0.22);
+        border-color: rgba(0, 212, 255, 0.45);
+    }
+    .dark-kpi-label { font-size: 13px; color: #8899aa; margin-bottom: 6px; }
+    .dark-kpi-value { font-size: 28px; font-weight: bold; color: #00d4ff; text-shadow: 0 0 12px rgba(0, 212, 255, 0.35); }
+    .dark-kpi-unit { font-size: 13px; color: #8899aa; margin-left: 4px; }
+    .dark-kpi-orange .dark-kpi-value { color: #ff7a00; text-shadow: 0 0 12px rgba(255, 122, 0, 0.35); }
+    .dark-kpi-green .dark-kpi-value { color: #00d4a0; text-shadow: 0 0 12px rgba(0, 212, 160, 0.35); }
+    .dark-kpi-purple .dark-kpi-value { color: #a855f7; text-shadow: 0 0 12px rgba(168, 85, 247, 0.35); }
+
+    /* ===== 业务模块卡片（紧凑） ===== */
+    .biz-module-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    .biz-module-card {
+        background: #fff;
+        border: 1px solid #e8ecf1;
+        border-radius: 8px;
+        padding: 12px 8px;
+        text-align: center;
+        text-decoration: none;
+        color: #333;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .biz-module-card:hover {
+        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+        color: #1A3C6E;
+        border-color: #1A3C6E;
+    }
+    .biz-module-card .biz-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: #fff;
+    }
+    .biz-module-card .biz-name {
+        font-size: 12px;
+        font-weight: 500;
+    }
+    @media (max-width: 768px) {
+        .biz-module-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+<!-- ===== 筛选栏（顶部） ===== -->
+<div class="home-filter-bar">
+    <form method="GET" action="{{ url_for('home.index') }}" class="row g-3 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label small fw-medium">统计周期</label>
+            <select name="period" class="form-select form-select-sm">
+                <option value="" {% if not period %}selected{% endif %}>全部</option>
+                <option value="month" {% if period == 'month' %}selected{% endif %}>本月</option>
+                <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>本季</option>
+                <option value="year" {% if period == 'year' %}selected{% endif %}>本年</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-medium">承接公司</label>
+            <select name="contractor_id" class="form-select form-select-sm">
+                <option value="" {% if not contractor_id %}selected{% endif %}>全部</option>
+                {% for c in contractors %}
+                <option value="{{ c.id }}" {% if contractor_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-medium">甲方单位</label>
+            <select name="client_id" class="form-select form-select-sm">
+                <option value="" {% if not client_id %}selected{% endif %}>全部</option>
+                {% for c in clients %}
+                <option value="{{ c.id }}" {% if client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-medium">项目名称</label>
+            <select name="project_ids" class="form-select form-select-sm" multiple size="1">
+                {% for p in all_projects %}
+                <option value="{{ p.id }}" {% if p.id in selected_project_ids %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-medium">项目状态</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="" {% if not selected_status %}selected{% endif %}>全部状态</option>
+                <option value="finished" {% if selected_status == 'finished' %}selected{% endif %}>已完工</option>
+                <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>在建</option>
+                <option value="not_started" {% if selected_status == 'not_started' %}selected{% endif %}>未开工</option>
+                <option value="stopped" {% if selected_status == 'stopped' %}selected{% endif %}>停工</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn-filter-query"><i class="bi bi-search"></i> 查询</button>
+            <a href="{{ url_for('home.index') }}" class="btn-filter-reset"><i class="bi bi-arrow-repeat"></i> 重置</a>
+        </div>
+    </form>
+</div>
+
+<!-- ===== 深色 KPI 卡片 ===== -->
+<div class="row g-3 mb-4">
+    <div class="col">
+        <div class="dark-kpi-card">
+            <div class="dark-kpi-label">项目数量（全部项目）</div>
+            <div class="dark-kpi-value">{{ summary_stats.project_count }}<span class="dark-kpi-unit">个</span></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="dark-kpi-card dark-kpi-green">
+            <div class="dark-kpi-label">产值万元（累计产值）</div>
+            <div class="dark-kpi-value">{{ "%.2f"|format(summary_stats.output_value) }}<span class="dark-kpi-unit">万</span></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="dark-kpi-card dark-kpi-orange">
+            <div class="dark-kpi-label">合同额万元（合同总额）</div>
+            <div class="dark-kpi-value">{{ "%.2f"|format(summary_stats.contract_amount) }}<span class="dark-kpi-unit">万</span></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="dark-kpi-card dark-kpi-purple">
+            <div class="dark-kpi-label">已完工数</div>
+            <div class="dark-kpi-value">{{ summary_stats.finished_count }}<span class="dark-kpi-unit">个</span></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="dark-kpi-card">
+            <div class="dark-kpi-label">在建数（在建中）</div>
+            <div class="dark-kpi-value">{{ summary_stats.in_progress_count }}<span class="dark-kpi-unit">个</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 四张白色卡片 ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        {{ stat_card('预算总量', "%.1f"|format(white_stats.contract_qty) ~ ' T', 'clipboard-data', 'primary') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('消耗总量', "%.1f"|format(white_stats.usage_qty) ~ ' T', 'box-seam', 'warning') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('翻样总量', "%.1f"|format(white_stats.detailing_qty) ~ ' T', 'rulers', 'info') }}
+    </div>
+    <div class="col-md-3">
+        {{ stat_card('进场总量', "%.1f"|format(white_stats.incoming_qty) ~ ' T', 'arrow-down-circle', 'success') }}
+    </div>
+</div>
+
+<!-- ===== 业务模块（2行4列，紧凑） ===== -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white py-2">
+        <h6 class="mb-0 small"><i class="bi bi-grid-3x3-gap"></i> 工作台</h6>
+    </div>
+    <div class="card-body py-2 px-3">
+        <div class="biz-module-grid">
+            {% for item in workbench %}
+            <a href="{{ item.url }}" class="biz-module-card" target="_blank">
+                <div class="biz-icon" style="background: {{ item.bg }};">
+                    <i class="bi bi-{{ item.icon }}"></i>
+                </div>
+                <span class="biz-name">{{ item.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== 综合管理（2行4列，紧凑） ===== -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white py-2">
+        <h6 class="mb-0 small"><i class="bi bi-gear"></i> 综合管理</h6>
+    </div>
+    <div class="card-body py-2 px-3">
+        <div class="biz-module-grid">
+            {% for item in management %}
+            <a href="{{ item.url }}" class="biz-module-card" target="_blank">
+                <div class="biz-icon" style="background: {{ item.bg }};">
+                    <i class="bi bi-{{ item.icon }}"></i>
+                </div>
+                <span class="biz-name">{{ item.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== 图表区 ===== -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-bar-chart"></i> 项目收支对比</h6>
+    </div>
+    <div class="card-body">
+        <div style="height: 320px;">
+            <canvas id="homeProjectChart"></canvas>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var ctx = document.getElementById('homeProjectChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data.labels | tojson }},
+            datasets: [
+                {
+                    label: '预算量',
+                    data: {{ chart_data.contract | tojson }},
+                    backgroundColor: 'rgba(26, 60, 110, 0.9)',
+                    borderColor: '#1A3C6E',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: '使用量',
+                    data: {{ chart_data.usage | tojson }},
+                    backgroundColor: 'rgba(255, 122, 0, 0.9)',
+                    borderColor: '#FF7A00',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: '节约量',
+                    data: {{ chart_data.saved | tojson }},
+                    backgroundColor: 'rgba(25, 135, 84, 0.9)',
+                    borderColor: '#198754',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '吨(T)' } }
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

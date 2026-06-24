@@ -1,0 +1,161 @@
+<!-- Tab5: 盈亏分析 -->
+<div class="row g-4">
+    <!-- 指标卡片 -->
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">钢筋收入</div>
+            <div class="value">{{ profit.rebar_income | format_money }}<span class="fs-6 text-muted fw-normal ms-1">元</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">其他收入</div>
+            <div class="value">{{ profit.other_income | format_money }}<span class="fs-6 text-muted fw-normal ms-1">元</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">项目成本</div>
+            <div class="value">{{ profit.total_cost | format_money }}<span class="fs-6 text-muted fw-normal ms-1">元</span></div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="summary-card text-center">
+            <div class="title">净利润</div>
+            <div class="value {{ 'text-success' if profit.net_profit >= 0 else 'text-danger' }}">{{ profit.net_profit | format_money }}<span class="fs-6 text-muted fw-normal ms-1">元</span></div>
+        </div>
+    </div>
+
+    <!-- 利润率大字 -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="big-metric">
+                    <div class="value {{ 'text-success' if profit.profit_rate >= 0 else 'text-danger' }}">{{ profit.profit_rate | format_percent(1) }}%</div>
+                    <div class="label">利润率（钢筋定价 {{ profit.rebar_unit_price | format_money }} 元/T）</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 月度趋势图 -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> 成本月度趋势（收入参考线）</h5>
+            </div>
+            <div class="card-body" style="height:360px;">
+                <canvas id="profitTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成本明细表格 -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> 成本构成</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 cost-table">
+                        <thead>
+                            <tr>
+                                <th>成本类别</th>
+                                <th class="text-end">金额(元)</th>
+                                <th class="text-end">占比</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if profit.cost_breakdown %}
+                                {% for item in profit.cost_breakdown %}
+                                <tr>
+                                    <td>{{ item.category }}</td>
+                                    <td class="text-end">{{ item.amount | format_money }}</td>
+                                    <td class="text-end">{{ item.ratio }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">暂无成本记录</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    var labels = {{ profit.monthly_costs | map(attribute='label') | list | tojson }};
+    var costData = {{ profit.monthly_costs | map(attribute='amount') | list | tojson }};
+    var totalIncome = {{ profit.total_income | float }};
+
+    window.initProfitChart = function() {
+        var canvas = document.getElementById('profitTrendChart');
+        if (!canvas || canvas.dataset.initialized) return;
+        canvas.dataset.initialized = 'true';
+
+        new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '月度成本',
+                        data: costData,
+                        backgroundColor: 'rgba(255, 122, 0, 0.8)',
+                        borderColor: '#FF7A00',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        order: 2
+                    },
+                    {
+                        label: '总收入参考线',
+                        data: Array(labels.length).fill(totalIncome),
+                        type: 'line',
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ctx.dataset.label + ': ' + ctx.raw.toLocaleString('zh-CN') + ' 元';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return v.toLocaleString('zh-CN'); }
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    // 如果当前利润 Tab 初始就是激活状态，立即初始化
+    if (document.getElementById('profit') && document.getElementById('profit').classList.contains('active')) {
+        window.initProfitChart();
+    }
+})();
+</script>

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} — 钢筋精细化管理平台{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('project.import_file', type=ledger_type) }}" enctype="multipart/form-data">
+            {{ csrf_field|safe }}
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">台账类型 <span class="text-danger">*</span></label>
+                    <select name="ledger_type" class="form-select" required
+                            onchange="window.location.href='{{ url_for('project.import_file') }}?type=' + this.value">
+                        <option value="model_quantity" {% if ledger_type == 'model_quantity' %}selected{% endif %}>钢筋模型表</option>
+                        <option value="incoming" {% if ledger_type == 'incoming' %}selected{% endif %}>钢筋进场表</option>
+                        <option value="transfer" {% if ledger_type == 'transfer' %}selected{% endif %}>调拨钢筋表</option>
+                        <option value="waste" {% if ledger_type == 'waste' %}selected{% endif %}>废料钢筋表</option>
+                        <option value="inventory" {% if ledger_type == 'inventory' %}selected{% endif %}>钢筋剩余表</option>
+                        <option value="secondary" {% if ledger_type == 'secondary' %}selected{% endif %}>钢筋二构表</option>
+                        <option value="detailing" {% if ledger_type == 'detailing' %}selected{% endif %}>钢筋翻样表</option>
+                        <option value="non_budget" {% if ledger_type == 'non_budget' %}selected{% endif %}>非预算收入使用钢筋表</option>
+                        <option value="pile_foundation" {% if ledger_type == 'pile_foundation' %}selected{% endif %}>主体桩基表</option>
+                        <option value="support_structure" {% if ledger_type == 'support_structure' %}selected{% endif %}>基坑支护表</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">所属项目 <span class="text-danger">*</span></label>
+                    <select name="project_id" class="form-select" required>
+                        <option value="">请选择项目</option>
+                        {% for p in projects %}
+                        <option value="{{ p.id }}">{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Excel 文件 <span class="text-danger">*</span></label>
+                    <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-upload"></i> 上传文件
+                </button>
+                <a href="{{ url_for('project.dashboard') }}" class="btn btn-outline-secondary">返回</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

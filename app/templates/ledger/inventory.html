@@ -1,0 +1,20 @@
+{% extends "ledger/base_ledger.html" %}
+{% from "_macros.html" import data_table, empty_state, status_badge %}
+{% set title = "盘点表" %}{% set import_type = "inventory" %}{% set total_label = "盘点总量" %}{% set unit_label = "吨(T)" if unit=='T' else "公斤(kg)" %}
+{% block table %}
+{% call data_table(['盘点日期', '类别', '规格', '数量(件)', '单位重(T)', '合计重(T)', '备注']) %}
+    {% if items %}
+    {% for i in items %}<tr>
+        <td>{{ i.inventory_date.strftime('%Y-%m-%d') if i.inventory_date else '-' }}</td>
+        <td>{{ status_badge(i.category, INVENTORY_CATEGORY_MAP) }}</td>
+        <td>{{ i.spec }}</td>
+        <td class="text-end">{{ i.piece_count or 0 }}</td>
+        <td class="text-end">{{ i.unit_weight | format_ton }}</td>
+        <td class="text-end fw-bold">{{ i.display_weight | format_ton }}</td>
+        <td class="small">{{ i.remark or '-' }}</td>
+    </tr>{% endfor %}
+    {% else %}
+    <tr><td colspan="7">{{ empty_state('inbox', '暂无盘点记录') }}</td></tr>
+    {% endif %}
+{% endcall %}
+{% endblock %}

@@ -1,0 +1,15 @@
+[Unit]
+Description=钢筋精细化管理平台健康看门狗定时器
+Documentation=https://github.com/rebar-mgmt/rebar-mgmt
+
+[Timer]
+# 开机后 1 分钟首次执行
+OnBootSec=1min
+# 之后每 30 秒执行一次
+OnUnitActiveSec=30s
+# 若错过了执行时机，立即补执行
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

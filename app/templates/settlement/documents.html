@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}结算文件{% endblock %}
+{% block page_title %}结算文件{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-file-earmark-text"></i> 结算文件导出</h6>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">导出当前项目的结算分析数据为 Excel 文件。</p>
+        <a href="{{ url_for('project.settlement_export', project_id=project.id) }}"
+           class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel"></i> 导出结算分析 Excel
+        </a>
+    </div>
+</div>
+{% endblock %}

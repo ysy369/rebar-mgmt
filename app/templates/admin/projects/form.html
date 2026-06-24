@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if project else '新建' }}项目{% endblock %}
+{% block page_title %}{{ '编辑' if project else '新建' }}项目{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px;">
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">项目名称 <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" value="{{ project.name if project else '' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">工程名称</label>
+          <input type="text" name="project_name" class="form-control" value="{{ project.project_name or '' if project else '' }}">
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">合同名称</label>
+          <input type="text" name="contract_name" class="form-control" value="{{ project.contract_name or '' if project else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">合同编号</label>
+          <input type="text" name="contract_no" class="form-control" value="{{ project.contract_no or '' if project else '' }}">
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">总包单位名称</label>
+          <input type="text" name="total_contractor_name" class="form-control" value="{{ project.total_contractor_name or '' if project else '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">承接公司</label>
+          <select name="contractor_id" class="form-select">
+            <option value="0">-- 不选择 --</option>
+            {% for ct in contractors %}
+            <option value="{{ ct.id }}" {% if project and project.contractor_id == ct.id %}selected{% endif %}>{{ ct.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">甲方单位</label>
+          <select name="client_unit_id" class="form-select">
+            <option value="0">-- 不选择 --</option>
+            {% for c in clients %}
+            <option value="{{ c.id }}" {% if project and project.client_unit_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">项目状态</label>
+          <select name="status" class="form-select">
+            <option value="not_started" {% if project and project.status=='not_started' %}selected{% endif %}>未开工</option>
+            <option value="in_progress" {% if project and project.status=='in_progress' %}selected{% endif %}>在建</option>
+            <option value="finished" {% if project and project.status=='finished' %}selected{% endif %}>已完工</option>
+            <option value="stopped" {% if project and project.status=='stopped' %}selected{% endif %}>停工</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">开工日期</label>
+          <input type="date" name="start_date" class="form-control" value="{{ project.start_date.strftime('%Y-%m-%d') if project and project.start_date else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">总工期(天)</label>
+          <input type="number" name="duration_days" class="form-control" value="{{ project.duration_days if project and project.duration_days else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">服务工期(天)</label>
+          <input type="number" name="service_duration" class="form-control" value="{{ project.service_duration if project and project.service_duration else '' }}">
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">建筑面积(m²)</label>
+          <input type="number" step="0.01" name="building_area" class="form-control" value="{{ project.building_area if project and project.building_area else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">钢筋含量(kg/m²)</label>
+          <input type="number" step="0.001" name="rebar_content" class="form-control" value="{{ project.rebar_content if project and project.rebar_content else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">预估钢筋总量(T)</label>
+          <input type="number" step="0.001" name="est_rebar_total" class="form-control" value="{{ project.est_rebar_total if project and project.est_rebar_total else '' }}">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">工程地点</label>
+        <input type="text" name="project_location" class="form-control" value="{{ project.project_location or '' if project else '' }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">服务范围</label>
+        <textarea name="service_scope" class="form-control" rows="2">{{ project.service_scope or '' if project else '' }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">服务内容</label>
+        <textarea name="service_content" class="form-control" rows="2">{{ project.service_content or '' if project else '' }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">项目描述</label>
+        <textarea name="description" class="form-control" rows="2">{{ project.description or '' if project else '' }}</textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> 保存</button>
+        <a href="{{ url_for('admin.project_list') }}" class="btn btn-outline-secondary">取消</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
