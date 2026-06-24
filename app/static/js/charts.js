@@ -5,10 +5,10 @@
 (function () {
     "use strict";
 
-    // 项目统一配色
+    // 项目统一配色（与 style.css :root 令牌对齐）
     var COLORS = [
-        "#1A3C6E", "#FF7A00", "#0DCAF0", "#198754",
-        "#FAAD14", "#F5222D", "#6F42C1", "#20C997"
+        "#1a2744", "#f15a24", "#0098ae", "#198754",
+        "#f0a020", "#dc3545", "#6f42c1", "#20c997"
     ];
 
     function getColors(count) {

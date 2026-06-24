@@ -350,7 +350,7 @@
     var allPeriodLabels = pNames;
     var allPeriodDatasets = [
         { label: '预算', data: pBudget, backgroundColor: '#1a2744' },
-        { label: '消耗', data: pUsage, backgroundColor: '#e07b39' },
+        { label: '消耗', data: pUsage, backgroundColor: '#f15a24' },
         { label: '节约', data: pSaved, backgroundColor: '#198754' }
     ];
 
@@ -366,7 +366,7 @@
                 {{ monthly_stats['usage'] | float }},
                 {{ monthly_stats['saved'] | float }}
             ],
-            backgroundColor: ['#1a2744', '#198754', '#e07b39', '#0dcaf0']
+            backgroundColor: ['#1a2744', '#198754', '#f15a24', '#0dcaf0']
         }
     ];
     {% else %}

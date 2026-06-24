@@ -202,19 +202,22 @@
                 </div>
             </header>
 
-            <!-- Flash 消息 -->
-            <div class="px-4 pt-3">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-            </div>
+            <!-- Toast 通知 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="toast-container" id="flashContainer">
+                    {% for category, message in messages %}
+                    {% set icon_map = {'success': 'check-circle-fill', 'danger': 'exclamation-triangle-fill', 'warning': 'exclamation-circle-fill', 'info': 'info-circle-fill'} %}
+                    {% set icon = icon_map.get(category, 'info-circle-fill') %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{{ icon }}"></i>
+                        <span>{{ message }}</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
 
             <!-- 面包屑与页面大标题 -->
             {% block page_header %}

@@ -18,13 +18,13 @@
             --bg-primary: #0a1628;
             --bg-card: rgba(13, 31, 60, 0.8);
             --border-color: rgba(0, 212, 255, 0.3);
-            --cyan: #00d4ff;
-            --orange: #ff7a00;
+            --cyan: #0098ae;
+            --orange: #f15a24;
             --text-primary: #ffffff;
             --text-secondary: #8899aa;
-            --grid-color: #1a3a5c;
+            --grid-color: #1a3050;
             --danger: #ff4d4f;
-            --warning: #ff7a00;
+            --warning: #f15a24;
             --success: #00d4a0;
             --info: #f4d03f;
         }
@@ -1078,7 +1078,7 @@
 
     // ================= Chart.js 深色主题配置（保持原有逻辑） =================
     Chart.defaults.color = '#8899aa';
-    Chart.defaults.borderColor = '#1a3a5c';
+    Chart.defaults.borderColor = '#1a3050';
     Chart.defaults.font.family = '"Microsoft YaHei", sans-serif';
 
     function commonChartOptions(yTitle) {
@@ -1091,7 +1091,7 @@
                 },
                 tooltip: {
                     backgroundColor: 'rgba(13, 31, 60, 0.95)',
-                    titleColor: '#00d4ff',
+                    titleColor: '#0098ae',
                     bodyColor: '#ffffff',
                     borderColor: 'rgba(0, 212, 255, 0.3)',
                     borderWidth: 1
@@ -1099,12 +1099,12 @@
             },
             scales: {
                 x: {
-                    grid: { color: '#1a3a5c', drawBorder: false },
+                    grid: { color: '#1a3050', drawBorder: false },
                     ticks: { color: '#8899aa' }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#1a3a5c', drawBorder: false },
+                    grid: { color: '#1a3050', drawBorder: false },
                     ticks: { color: '#8899aa' },
                     title: {
                         display: !!yTitle,
@@ -1135,8 +1135,8 @@
                     'rgba(0, 212, 255, 0.9)'
                 ],
                 borderColor: [
-                    '#1A3C6E',
-                    '#FF7A00',
+                    '#1a2744',
+                    '#f15a24',
                     '#00D4FF'
                 ],
                 borderWidth: 1,
@@ -1164,8 +1164,8 @@
                     'rgba(0, 212, 255, 0.9)'
                 ],
                 borderColor: [
-                    '#1A3C6E',
-                    '#FF7A00',
+                    '#1a2744',
+                    '#f15a24',
                     '#00D4FF'
                 ],
                 borderWidth: 1,
@@ -1187,11 +1187,11 @@
         usage: {
             label: '施工进度（耗用量）',
             data: trendData.usage,
-            borderColor: '#00d4ff',
+            borderColor: '#0098ae',
             backgroundColor: 'rgba(0, 212, 255, 0.12)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#00d4ff',
+            pointBackgroundColor: '#0098ae',
             pointBorderColor: '#ffffff',
             pointRadius: 4,
             pointHoverRadius: 6
@@ -1199,11 +1199,11 @@
         bom: {
             label: '翻样进度（配料单吨数）',
             data: trendData.bom,
-            borderColor: '#ff7a00',
+            borderColor: '#f15a24',
             backgroundColor: 'rgba(255, 122, 0, 0.12)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#ff7a00',
+            pointBackgroundColor: '#f15a24',
             pointBorderColor: '#ffffff',
             pointRadius: 4,
             pointHoverRadius: 6

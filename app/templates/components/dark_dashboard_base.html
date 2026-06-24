@@ -17,16 +17,16 @@
         :root {
             --bg-primary: #0a1628;
             --bg-card: rgba(13, 31, 60, 0.85);
-            --border-color: rgba(0, 212, 255, 0.3);
-            --cyan: #00d4ff;
-            --orange: #ff7a00;
+            --border-color: rgba(0, 152, 174, 0.25);
+            --cyan: #0098ae;
+            --orange: #f15a24;
             --text-primary: #ffffff;
             --text-secondary: #8899aa;
-            --grid-color: #1a3a5c;
-            --danger: #ff4d4f;
-            --warning: #ff7a00;
-            --success: #00d4a0;
-            --info: #f4d03f;
+            --grid-color: #1a3050;
+            --danger: #dc3545;
+            --warning: #f15a24;
+            --success: #198754;
+            --info: #f0a020;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
@@ -269,7 +269,7 @@
 // Chart.js 深色主题默认配置
 (function() {
     Chart.defaults.color = '#8899aa';
-    Chart.defaults.borderColor = '#1a3a5c';
+    Chart.defaults.borderColor = '#1a3050';
     Chart.defaults.font.family = '"Microsoft YaHei", sans-serif';
 
     window.commonChartOptions = function(yTitle) {
@@ -282,7 +282,7 @@
                 },
                 tooltip: {
                     backgroundColor: 'rgba(13, 31, 60, 0.95)',
-                    titleColor: '#00d4ff',
+                    titleColor: '#0098ae',
                     bodyColor: '#ffffff',
                     borderColor: 'rgba(0, 212, 255, 0.3)',
                     borderWidth: 1
@@ -290,12 +290,12 @@
             },
             scales: {
                 x: {
-                    grid: { color: '#1a3a5c', drawBorder: false },
+                    grid: { color: '#1a3050', drawBorder: false },
                     ticks: { color: '#8899aa' }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#1a3a5c', drawBorder: false },
+                    grid: { color: '#1a3050', drawBorder: false },
                     ticks: { color: '#8899aa' },
                     title: {
                         display: !!yTitle,

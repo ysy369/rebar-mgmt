@@ -116,9 +116,9 @@ def index():
 
     # 工作台 8 入口（2行4列业务模块）
     workbench = [
-        {"name": "钢筋预算", "icon": "calculator",    "url": url_for("bom.dashboard"),           "bg": "#1A3C6E"},
-        {"name": "钢筋翻样", "icon": "file-earmark-text","url": url_for("bom.dashboard"),         "bg": "#1a4d8f"},
-        {"name": "钢筋物资", "icon": "box-seam",       "url": url_for("project.project_list"),            "bg": "#FF7A00"},
+        {"name": "钢筋预算", "icon": "calculator",    "url": url_for("bom.dashboard"),           "bg": "#1a2744"},
+        {"name": "钢筋翻样", "icon": "file-earmark-text","url": url_for("bom.dashboard"),         "bg": "#243556"},
+        {"name": "钢筋物资", "icon": "box-seam",       "url": url_for("project.project_list"),            "bg": "#f15a24"},
         {"name": "策划管理", "icon": "kanban",          "url": url_for("home.index"),              "bg": "#198754"},
         {"name": "巡检台帐", "icon": "clipboard-check", "url": url_for("site.inspection"),         "bg": "#0d6efd"},
         {"name": "盈亏分析", "icon": "pie-chart",       "url": url_for("audit.profit_loss"),        "bg": "#6f42c1"},
@@ -128,9 +128,9 @@ def index():
 
     # 综合管理 8 入口（2行4列）
     management = [
-        {"name": "策划跟踪", "icon": "diagram-3",        "url": url_for("home.index"),              "bg": "#1A3C6E"},
-        {"name": "项目交底", "icon": "clipboard-data",   "url": url_for("work.index"),              "bg": "#1a4d8f"},
-        {"name": "图纸答疑", "icon": "question-circle",   "url": url_for("work.index"),              "bg": "#FF7A00"},
+        {"name": "策划跟踪", "icon": "diagram-3",        "url": url_for("home.index"),              "bg": "#1a2744"},
+        {"name": "项目交底", "icon": "clipboard-data",   "url": url_for("work.index"),              "bg": "#243556"},
+        {"name": "图纸答疑", "icon": "question-circle",   "url": url_for("work.index"),              "bg": "#f15a24"},
         {"name": "扣费材料", "icon": "cash-coin",        "url": url_for("audit.comparison_calc", category="fixed"), "bg": "#dc3545"},
         {"name": "非施料单", "icon": "file-earmark-text","url": url_for("project.non_budget_sheet"),"bg": "#198754"},
         {"name": "材料计划", "icon": "calendar-check",    "url": url_for("audit.procurement_plan"),   "bg": "#0d6efd"},

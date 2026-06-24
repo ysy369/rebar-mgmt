@@ -21,12 +21,15 @@
         }
     }
 
-    // ---------- Flash 消息自动消失 ----------
-    document.querySelectorAll(".alert-dismissible").forEach(function (alert) {
+    // ---------- Toast 通知自动消失 ----------
+    document.querySelectorAll("#flashContainer .alert").forEach(function (alert) {
+        var isDanger = alert.classList.contains("alert-danger");
+        var isWarning = alert.classList.contains("alert-warning");
+        var delay = isDanger || isWarning ? 6000 : 4000;
         setTimeout(function () {
             var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
             if (bsAlert) bsAlert.close();
-        }, 5000);
+        }, delay);
     });
 
     // ---------- CSRF 自动注入：所有 POST 表单自动加上令牌 ----------

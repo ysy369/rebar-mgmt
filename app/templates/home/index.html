@@ -5,107 +5,6 @@
 {% block page_header %}{% endblock %}
 {% block content %}
 
-<style>
-    /* ===== 筛选栏 ===== */
-    .home-filter-bar {
-        background: #fff;
-        border-radius: 10px;
-        padding: 16px 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        margin-bottom: 16px;
-    }
-    .home-filter-bar .form-select,
-    .home-filter-bar .form-control {
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-        font-size: 13px;
-    }
-    .btn-filter-query {
-        background: #1a3c6e;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 6px 18px;
-        font-size: 13px;
-    }
-    .btn-filter-query:hover { background: #152d52; color: #fff; }
-    .btn-filter-reset {
-        background: #fff;
-        color: #6c757d;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 6px 18px;
-        font-size: 13px;
-    }
-    .btn-filter-reset:hover { background: #f8f9fa; }
-
-    /* ===== 深色 KPI 卡片 ===== */
-    .dark-kpi-card {
-        background: rgba(13, 31, 60, 0.92);
-        border: 1px solid rgba(0, 212, 255, 0.25);
-        border-radius: 12px;
-        padding: 18px;
-        color: #fff;
-        box-shadow: 0 0 15px rgba(0, 212, 255, 0.12);
-        transition: all 0.3s ease;
-        height: 100%;
-    }
-    .dark-kpi-card:hover {
-        box-shadow: 0 0 22px rgba(0, 212, 255, 0.22);
-        border-color: rgba(0, 212, 255, 0.45);
-    }
-    .dark-kpi-label { font-size: 13px; color: #8899aa; margin-bottom: 6px; }
-    .dark-kpi-value { font-size: 28px; font-weight: bold; color: #00d4ff; text-shadow: 0 0 12px rgba(0, 212, 255, 0.35); }
-    .dark-kpi-unit { font-size: 13px; color: #8899aa; margin-left: 4px; }
-    .dark-kpi-orange .dark-kpi-value { color: #ff7a00; text-shadow: 0 0 12px rgba(255, 122, 0, 0.35); }
-    .dark-kpi-green .dark-kpi-value { color: #00d4a0; text-shadow: 0 0 12px rgba(0, 212, 160, 0.35); }
-    .dark-kpi-purple .dark-kpi-value { color: #a855f7; text-shadow: 0 0 12px rgba(168, 85, 247, 0.35); }
-
-    /* ===== 业务模块卡片（紧凑） ===== */
-    .biz-module-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-    }
-    .biz-module-card {
-        background: #fff;
-        border: 1px solid #e8ecf1;
-        border-radius: 8px;
-        padding: 12px 8px;
-        text-align: center;
-        text-decoration: none;
-        color: #333;
-        transition: all 0.2s ease;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-    }
-    .biz-module-card:hover {
-        box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-        transform: translateY(-1px);
-        color: #1A3C6E;
-        border-color: #1A3C6E;
-    }
-    .biz-module-card .biz-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 7px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-        color: #fff;
-    }
-    .biz-module-card .biz-name {
-        font-size: 12px;
-        font-weight: 500;
-    }
-    @media (max-width: 768px) {
-        .biz-module-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-</style>
-
 <!-- ===== 筛选栏（顶部） ===== -->
 <div class="home-filter-bar">
     <form method="GET" action="{{ url_for('home.index') }}" class="row g-3 align-items-end">
@@ -275,16 +174,16 @@
                 {
                     label: '预算量',
                     data: {{ chart_data.contract | tojson }},
-                    backgroundColor: 'rgba(26, 60, 110, 0.9)',
-                    borderColor: '#1A3C6E',
+                    backgroundColor: 'rgba(26, 39, 68, 0.85)',
+                    borderColor: '#1a2744',
                     borderWidth: 1,
                     borderRadius: 4
                 },
                 {
                     label: '使用量',
                     data: {{ chart_data.usage | tojson }},
-                    backgroundColor: 'rgba(255, 122, 0, 0.9)',
-                    borderColor: '#FF7A00',
+                    backgroundColor: 'rgba(241, 90, 36, 0.85)',
+                    borderColor: '#f15a24',
                     borderWidth: 1,
                     borderRadius: 4
                 },
