@@ -14,7 +14,7 @@ ledger_bp = Blueprint("ledger", __name__, template_folder="../templates/ledger")
 
 def _bc(*items):
     """构造统一面包屑：首页 + 各级节点"""
-    base = [{"name": "钢筋管理平台", "url": url_for("dashboard.index")}]
+    base = [{"name": "钢筋管理平台", "url": url_for("home.index")}]
     base.extend(items)
     return base
 
