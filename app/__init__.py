@@ -278,6 +278,11 @@ def create_app(config_name=None):
         config_name = os.environ.get("FLASK_ENV", "development")
 
     app = Flask(__name__)
+    # 确保项目根目录在 sys.path 中（Celery Worker 子进程可能需要）
+    import sys as _sys
+    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _project_root not in _sys.path:
+        _sys.path.insert(0, _project_root)
     from config import config_map
     app.config.from_object(config_map.get(config_name, config_map["development"]))
 
