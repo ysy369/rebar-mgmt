@@ -258,7 +258,7 @@ def _render_sheet(view_name):
         pagination=pagination,
         active_menu="file_management",
         active_submenu=view_name,
-        breadcrumbs=_bc({"name": "项目管理", "url": None}, {"name": page_title, "url": None}),
+        breadcrumbs=_bc({"name": "文件管理", "url": url_for("project.import_file")}, {"name": page_title, "url": None}),
         page_title=page_title,
     )
 
@@ -488,7 +488,7 @@ def import_file():
         active_menu="file_management",
         active_submenu="import",
         breadcrumbs=_bc(
-            {"name": "项目管理", "url": None},
+            {"name": "文件管理", "url": url_for("project.import_file")},
             {"name": "文件导入", "url": None},
         ),
         page_title=f"导入{LEDGER_TYPE_LABELS.get(ledger_type, ledger_type)}",
