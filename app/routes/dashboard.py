@@ -602,7 +602,7 @@ def index():
     # ================= 改动3：顶部导航菜单路由 =================
     nav_menu = [
         {"name": "数据看板", "url": url_for("dashboard.index"), "active": True, "visible": True},
-        {"name": "钢筋台账", "url": url_for("project.list"), "active": False, "visible": True},
+        {"name": "钢筋台账", "url": url_for("project.project_list"), "active": False, "visible": True},
         {"name": "方样料单", "url": url_for("bom.dashboard"), "active": False, "visible": True},
         {"name": "项目管理", "url": url_for("admin.project_list"), "active": False, "visible": current_user.is_admin},
         {"name": "料单审核", "url": url_for("admin.cutting_order_list"), "active": False, "visible": current_user.is_admin},
