@@ -338,6 +338,7 @@ def create_app(config_name=None):
             "csrf_field": Markup(f'<input type="hidden" name="_csrf_token" value="{token}">'),
             "current_project": project,
             "period_options": _build_period_options(),
+            "platform_type": session.get("platform_type", "jinguan"),
         }
 
     return app

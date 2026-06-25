@@ -18,6 +18,24 @@
 
             <form method="POST" action="{{ url_for('auth.login') }}" class="login-form">
                 {{ csrf_field }}
+                <input type="hidden" name="platformType" id="platformType" value="jinguan">
+
+                <!-- 平台选择 Tab -->
+                <div class="platform-tabs" role="tablist">
+                    <button type="button" class="platform-tab active" data-platform="jinguan" role="tab" aria-selected="true">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>精管平台</span>
+                    </button>
+                    <button type="button" class="platform-tab" data-platform="jingsuan" role="tab" aria-selected="false">
+                        <i class="bi bi-calculator"></i>
+                        <span>精算平台</span>
+                    </button>
+                    <button type="button" class="platform-tab" data-platform="cost" role="tab" aria-selected="false">
+                        <i class="bi bi-cash-stack"></i>
+                        <span>成本管理平台</span>
+                    </button>
+                </div>
+
                 <div class="mb-3">
                     <label for="username" class="form-label">
                         <i class="bi bi-person"></i> 账号
@@ -139,5 +157,83 @@
     .alert {
         border-radius: 8px;
     }
+
+    /* ========== 平台选择 Tab ========== */
+    .platform-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 24px;
+        border-bottom: 2px solid #e8eaed;
+    }
+    .platform-tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 8px 12px;
+        border: none;
+        background: none;
+        color: #9ca3af;
+        font-size: 0.875rem;
+        font-weight: 400;
+        cursor: pointer;
+        position: relative;
+        transition: color 0.25s ease, font-weight 0.25s ease;
+        white-space: nowrap;
+    }
+    .platform-tab::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%) scaleX(0);
+        width: 100%;
+        height: 3px;
+        background: var(--ink, #1a2744);
+        border-radius: 3px 3px 0 0;
+        transition: transform 0.25s ease;
+    }
+    .platform-tab:hover {
+        color: #6b7280;
+    }
+    .platform-tab.active {
+        color: var(--ink, #1a2744);
+        font-weight: 700;
+    }
+    .platform-tab.active::after {
+        transform: translateX(-50%) scaleX(1);
+    }
+    .platform-tab i {
+        font-size: 1rem;
+        transition: transform 0.25s ease;
+    }
+    .platform-tab.active i {
+        transform: scale(1.15);
+    }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabs = document.querySelectorAll('.platform-tab');
+        const hiddenInput = document.getElementById('platformType');
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                // 移除所有 active 状态
+                tabs.forEach(function (t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                // 设置当前选中
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                // 更新隐藏域值
+                hiddenInput.value = this.getAttribute('data-platform');
+            });
+        });
+    });
+</script>
 {% endblock %}

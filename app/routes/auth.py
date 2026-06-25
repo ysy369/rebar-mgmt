@@ -3,7 +3,7 @@
 # ============================================
 from datetime import datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.models.user import User
@@ -22,6 +22,7 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+        platform_type = request.form.get("platformType", "jinguan")
 
         if not username or not password:
             flash("请输入账号和密码。", "danger")
@@ -45,7 +46,10 @@ def login():
 
         db.session.commit()
 
-        log_operation(user.id, "login", f"用户 {username} 登录", request.remote_addr)
+        # 存储当前平台类型到 session
+        session["platform_type"] = platform_type
+
+        log_operation(user.id, "login", f"用户 {username} 登录（平台: {platform_type}）", request.remote_addr)
 
         flash(f"欢迎回来，{user.display_name}！", "success")
         return redirect_to_dashboard()
