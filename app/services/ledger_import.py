@@ -8,6 +8,18 @@ from app import db
 from app.models import Incoming, Transfer, MeasureRebar, Inventory, Waste, ImportedFile
 from app.celery_app import celery
 
+# Celery Worker 进程内缓存 Flask app（避免每次 task 重建）
+_worker_app = None
+
+
+def _get_worker_app():
+    """获取或创建 Celery Worker 专用的 Flask 应用实例"""
+    global _worker_app
+    if _worker_app is None:
+        from app import create_app
+        _worker_app = create_app()
+    return _worker_app
+
 ALLOWED_EXT = {'.xlsx', '.xls'}
 
 
@@ -249,14 +261,14 @@ def _update_import_status(imported_file_id, status, progress=0, error_message=No
 def process_excel_import(self, project_id, file_path, dtype, imported_file_id, user_id=None):
     """
     Celery 异步导入任务：后台解析 Excel → 写入数据库 → 更新进度 → 触发分析重算
-
-    参数:
-        project_id: 项目ID
-        file_path: Excel 文件路径（容器内路径）
-        dtype: 台账类型 (incoming/transfer/measure/inventory/waste/...)
-        imported_file_id: ImportedFile 记录ID（用于状态更新）
-        user_id: 上传人ID（可选）
     """
+    app = _get_worker_app()
+    with app.app_context():
+        return _do_process_excel_import(self, project_id, file_path, dtype, imported_file_id, user_id)
+
+
+def _do_process_excel_import(self, project_id, file_path, dtype, imported_file_id, user_id):
+    """实际执行导入逻辑（需要 Flask app context）"""
     try:
         _update_import_status(imported_file_id, 'processing', 0)
         self.update_state(state='PROGRESS', meta={'progress': 5})
