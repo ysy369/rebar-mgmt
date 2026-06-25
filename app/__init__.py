@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, redirect, url_for, request, session, abort, jsonify
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 logger = logging.getLogger(__name__)
 from flask_login import LoginManager, current_user
@@ -98,6 +99,15 @@ def _auto_migrate(app):
                  "ALTER TABLE projects ADD COLUMN contract_amount DECIMAL(14,2) NULL COMMENT '合同额(万元)' AFTER service_duration"),
                 ("projects", "output_value",
                  "ALTER TABLE projects ADD COLUMN output_value DECIMAL(14,2) NULL COMMENT '累计产值(万元)' AFTER contract_amount"),
+                # ImportedFile 异步导入字段
+                ("imported_files", "task_id",
+                 "ALTER TABLE imported_files ADD COLUMN task_id VARCHAR(100) NULL COMMENT 'Celery任务ID' AFTER uploaded_at"),
+                ("imported_files", "status",
+                 "ALTER TABLE imported_files ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT '导入状态' AFTER task_id"),
+                ("imported_files", "progress",
+                 "ALTER TABLE imported_files ADD COLUMN progress INT NOT NULL DEFAULT 0 COMMENT '进度0-100' AFTER status"),
+                ("imported_files", "error_message",
+                 "ALTER TABLE imported_files ADD COLUMN error_message TEXT NULL COMMENT '错误信息' AFTER progress"),
             ]
 
             with db.engine.connect() as conn:
@@ -177,6 +187,87 @@ def _auto_migrate(app):
                 except Exception as exc:
                     logger.warning(f"Auto-migration imported_files table: {exc}")
 
+                # 4. 创建扩展台账表（如不存在）
+                _extended_tables = {
+                    "detailing_records": """
+                        CREATE TABLE IF NOT EXISTS detailing_records (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            project_id INT NOT NULL COMMENT '项目ID',
+                            imported_file_id INT NULL COMMENT '导入文件ID',
+                            date DATE NULL COMMENT '日期',
+                            spec VARCHAR(50) NULL COMMENT '规格型号',
+                            weight_ton DECIMAL(10,3) NULL COMMENT '重量(吨)',
+                            remark VARCHAR(200) NULL COMMENT '备注',
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_detailing_project (project_id),
+                            INDEX idx_detailing_date (date),
+                            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                            FOREIGN KEY (imported_file_id) REFERENCES imported_files(id) ON DELETE SET NULL
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='钢筋翻样台账'
+                    """,
+                    "non_budget_records": """
+                        CREATE TABLE IF NOT EXISTS non_budget_records (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            project_id INT NOT NULL COMMENT '项目ID',
+                            imported_file_id INT NULL COMMENT '导入文件ID',
+                            date DATE NULL COMMENT '日期',
+                            spec VARCHAR(50) NULL COMMENT '规格型号',
+                            weight_ton DECIMAL(10,3) NULL COMMENT '重量(吨)',
+                            remark VARCHAR(200) NULL COMMENT '备注',
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_non_budget_project (project_id),
+                            INDEX idx_non_budget_date (date),
+                            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                            FOREIGN KEY (imported_file_id) REFERENCES imported_files(id) ON DELETE SET NULL
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='非预算收入使用钢筋台账'
+                    """,
+                    "pile_foundation_records": """
+                        CREATE TABLE IF NOT EXISTS pile_foundation_records (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            project_id INT NOT NULL COMMENT '项目ID',
+                            imported_file_id INT NULL COMMENT '导入文件ID',
+                            date DATE NULL COMMENT '日期',
+                            spec VARCHAR(50) NULL COMMENT '规格型号',
+                            weight_ton DECIMAL(10,3) NULL COMMENT '重量(吨)',
+                            remark VARCHAR(200) NULL COMMENT '备注',
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_pile_foundation_project (project_id),
+                            INDEX idx_pile_foundation_date (date),
+                            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                            FOREIGN KEY (imported_file_id) REFERENCES imported_files(id) ON DELETE SET NULL
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='主体桩基台账'
+                    """,
+                    "support_structure_records": """
+                        CREATE TABLE IF NOT EXISTS support_structure_records (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            project_id INT NOT NULL COMMENT '项目ID',
+                            imported_file_id INT NULL COMMENT '导入文件ID',
+                            date DATE NULL COMMENT '日期',
+                            spec VARCHAR(50) NULL COMMENT '规格型号',
+                            weight_ton DECIMAL(10,3) NULL COMMENT '重量(吨)',
+                            remark VARCHAR(200) NULL COMMENT '备注',
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            INDEX idx_support_structure_project (project_id),
+                            INDEX idx_support_structure_date (date),
+                            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                            FOREIGN KEY (imported_file_id) REFERENCES imported_files(id) ON DELETE SET NULL
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='基坑支护台账'
+                    """,
+                }
+                for tbl_name, create_sql in _extended_tables.items():
+                    try:
+                        tbl_exists = conn.execute(
+                            text("SELECT COUNT(*) FROM information_schema.TABLES "
+                                 "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t"),
+                            {"t": tbl_name}
+                        ).scalar() > 0
+                        if not tbl_exists:
+                            conn.execute(text(create_sql))
+                            conn.commit()
+                            logger.info(f"Auto-migration: created table {tbl_name}")
+                    except Exception as exc:
+                        logger.warning(f"Auto-migration create {tbl_name}: {exc}")
+
         except Exception as exc:
             logger.warning(f"Auto-migration skipped (DB not ready?): {exc}")
 
@@ -190,9 +281,16 @@ def create_app(config_name=None):
     from config import config_map
     app.config.from_object(config_map.get(config_name, config_map["development"]))
 
+    # Nginx 反向代理：信任 X-Forwarded-* 头
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+
+    # 初始化 Celery（注入 Flask 应用上下文）
+    from app.celery_app import make_celery
+    make_celery(app)
 
     # 自动执行数据库迁移（添加缺失列，幂等操作）
     _auto_migrate(app)

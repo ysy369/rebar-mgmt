@@ -25,6 +25,9 @@ class Config:
     EXPORT_FOLDER = os.path.join(basedir, "exports")
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
 
+    # Redis / Celery
+    REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
     # 分页
     PAGE_SIZE = 20
 

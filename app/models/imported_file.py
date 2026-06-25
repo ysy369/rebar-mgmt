@@ -31,6 +31,8 @@ class ImportedFile(db.Model):
             "secondary",
             "detailing",
             "non_budget",
+            "pile_foundation",
+            "support_structure",
         ),
         nullable=False,
         comment="台账类型",
@@ -43,6 +45,20 @@ class ImportedFile(db.Model):
     )
     uploaded_at = db.Column(
         db.DateTime, default=datetime.utcnow, comment="上传时间"
+    )
+    # 异步导入字段
+    task_id = db.Column(
+        db.String(100), nullable=True, comment="Celery 任务ID"
+    )
+    status = db.Column(
+        db.String(20), nullable=False, default="pending",
+        comment="导入状态: pending/processing/completed/failed"
+    )
+    progress = db.Column(
+        db.Integer, nullable=False, default=0, comment="进度 0-100"
+    )
+    error_message = db.Column(
+        db.Text, nullable=True, comment="失败时的错误信息"
     )
 
     # 关系

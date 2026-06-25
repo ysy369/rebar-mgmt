@@ -30,6 +30,12 @@ from app.models.bom import (
     RebarDetail,
     ImportBatch,
 )
+from app.models.rebar_extended import (
+    DetailingRecord,
+    NonBudgetRecord,
+    PileFoundationRecord,
+    SupportStructureRecord,
+)
 
 __all__ = [
     "ImportedFile",
@@ -58,4 +64,8 @@ __all__ = [
     "Component",
     "RebarDetail",
     "ImportBatch",
+    "DetailingRecord",
+    "NonBudgetRecord",
+    "PileFoundationRecord",
+    "SupportStructureRecord",
 ]

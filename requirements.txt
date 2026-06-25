@@ -25,3 +25,7 @@ waitress==3.0.2
 
 # 环境变量管理
 python-dotenv==1.0.1
+
+# 异步任务队列
+celery>=5.3.0
+redis>=5.0.0

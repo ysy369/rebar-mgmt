@@ -1,10 +1,12 @@
-"""钢筋台账数据导入服务——解析真实Excel模板"""
+"""钢筋台账数据导入服务——Celery 异步解析 Excel"""
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import pandas as pd
+from flask import current_app
 from app import db
-from app.models import Incoming, Transfer, MeasureRebar, Inventory, Waste
+from app.models import Incoming, Transfer, MeasureRebar, Inventory, Waste, ImportedFile
+from app.celery_app import celery
 
 ALLOWED_EXT = {'.xlsx', '.xls'}
 
@@ -31,8 +33,12 @@ def parse_date(val):
         return datetime.utcnow().date()
 
 
-def import_incoming(file_path, project_id, user_id):
-    """导入进场台账——匹配真实模板列: 序号/日期/单号/品牌/品名/规格/材质/型号/件数/理论重/过磅重①/车重②/钢筋重③"""
+# ============================================================
+# 核心解析函数（原 import_xxx → _do_parse_xxx，逻辑零改动）
+# ============================================================
+
+def _do_parse_incoming(file_path, project_id, user_id=None):
+    """导入进场台账——匹配真实模板列"""
     df = pd.read_excel(file_path, header=None)
     success, failed = 0, 0
     for idx in range(3, len(df)):
@@ -40,13 +46,12 @@ def import_incoming(file_path, project_id, user_id):
             row = df.iloc[idx]
             seq = str(row.iloc[0]) if pd.notna(row.iloc[0]) else ''
             if not seq.isdigit():
-                continue  # skip empty/merged rows
+                continue
             date = parse_date(row.iloc[1])
             receipt = str(row.iloc[2]) if pd.notna(row.iloc[2]) else None
             brand = str(row.iloc[3]) if pd.notna(row.iloc[3]) else None
             product = str(row.iloc[4]) if pd.notna(row.iloc[4]) else None
             spec = str(row.iloc[5]) if pd.notna(row.iloc[5]) else ''
-            # 跳过无规格的空行
             if not spec or spec.strip() == 'nan' or spec.strip() == '':
                 continue
             material = str(row.iloc[6]) if pd.notna(row.iloc[6]) else None
@@ -70,10 +75,10 @@ def import_incoming(file_path, project_id, user_id):
         except Exception as e:
             failed += 1
     db.session.commit()
-    return success, failed
+    return {'count': success, 'failed': failed}
 
 
-def import_transfer(file_path, project_id, user_id):
+def _do_parse_transfer(file_path, project_id, user_id=None):
     """导入调拨台账"""
     df = pd.read_excel(file_path, header=None)
     success, failed = 0, 0
@@ -96,10 +101,10 @@ def import_transfer(file_path, project_id, user_id):
         except:
             failed += 1
     db.session.commit()
-    return success, failed
+    return {'count': success, 'failed': failed}
 
 
-def import_measure(file_path, project_id, user_id):
+def _do_parse_measure(file_path, project_id, user_id=None):
     """导入措施筋台账"""
     df = pd.read_excel(file_path, header=None)
     success, failed = 0, 0
@@ -127,10 +132,10 @@ def import_measure(file_path, project_id, user_id):
         except:
             failed += 1
     db.session.commit()
-    return success, failed
+    return {'count': success, 'failed': failed}
 
 
-def import_inventory(file_path, project_id, user_id):
+def _do_parse_inventory(file_path, project_id, user_id=None):
     """导入盘点表"""
     df = pd.read_excel(file_path, header=None)
     success, failed = 0, 0
@@ -154,10 +159,10 @@ def import_inventory(file_path, project_id, user_id):
         except:
             failed += 1
     db.session.commit()
-    return success, failed
+    return {'count': success, 'failed': failed}
 
 
-def import_waste(file_path, project_id, user_id):
+def _do_parse_waste(file_path, project_id, user_id=None):
     """导入废料台账"""
     df = pd.read_excel(file_path, header=None)
     success, failed = 0, 0
@@ -180,8 +185,38 @@ def import_waste(file_path, project_id, user_id):
         except:
             failed += 1
     db.session.commit()
-    return success, failed
+    return {'count': success, 'failed': failed}
 
+
+# 路由 dtype → 数据库 ledger_type 映射
+# （路由 URL 使用短名如 'measure'，数据库存储标准名 'measure_rebar'）
+DTYPE_TO_LEDGER_TYPE = {
+    'incoming': 'incoming',
+    'transfer': 'transfer',
+    'measure': 'measure_rebar',
+    'inventory': 'inventory',
+    'waste': 'waste',
+    'detailing': 'detailing',
+    'non_budget': 'non_budget',
+    'pile_foundation': 'pile_foundation',
+    'support_structure': 'support_structure',
+}
+
+# 解析函数映射（Celery Task 内部使用）
+_PARSE_FUNCTIONS = {
+    'incoming': _do_parse_incoming,
+    'transfer': _do_parse_transfer,
+    'measure': _do_parse_measure,
+    'inventory': _do_parse_inventory,
+    'waste': _do_parse_waste,
+}
+
+# 向后兼容：旧代码直接调用 import_xxx 仍可使用
+import_incoming = _do_parse_incoming
+import_transfer = _do_parse_transfer
+import_measure = _do_parse_measure
+import_inventory = _do_parse_inventory
+import_waste = _do_parse_waste
 
 IMPORTERS = {
     'incoming': import_incoming,
@@ -190,3 +225,87 @@ IMPORTERS = {
     'inventory': import_inventory,
     'waste': import_waste,
 }
+
+# ============================================================
+# Celery 异步任务
+# ============================================================
+
+def _update_import_status(imported_file_id, status, progress=0, error_message=None):
+    """更新 ImportedFile 记录的导入状态"""
+    try:
+        record = ImportedFile.query.get(imported_file_id)
+        if record:
+            record.status = status
+            record.progress = progress
+            if error_message:
+                record.error_message = error_message
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"更新导入状态失败: {e}")
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def process_excel_import(self, project_id, file_path, dtype, imported_file_id, user_id=None):
+    """
+    Celery 异步导入任务：后台解析 Excel → 写入数据库 → 更新进度 → 触发分析重算
+
+    参数:
+        project_id: 项目ID
+        file_path: Excel 文件路径（容器内路径）
+        dtype: 台账类型 (incoming/transfer/measure/inventory/waste/...)
+        imported_file_id: ImportedFile 记录ID（用于状态更新）
+        user_id: 上传人ID（可选）
+    """
+    try:
+        _update_import_status(imported_file_id, 'processing', 0)
+        self.update_state(state='PROGRESS', meta={'progress': 5})
+
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+        self.update_state(state='PROGRESS', meta={'progress': 10})
+
+        # 未提供模板的四类台账：仅保存文件，不解析
+        if dtype in ['detailing', 'non_budget', 'pile_foundation', 'support_structure']:
+            _update_import_status(imported_file_id, 'completed', 100)
+            self.update_state(state='SUCCESS', meta={'progress': 100})
+            return {
+                'status': 'completed',
+                'message': '该类型暂不支持解析，仅保存文件',
+                'records_count': 0,
+            }
+
+        # 根据 dtype 调用对应解析函数
+        parse_fn = _PARSE_FUNCTIONS.get(dtype)
+        if not parse_fn:
+            raise ValueError(f"不支持的台账类型: {dtype}")
+
+        self.update_state(state='PROGRESS', meta={'progress': 20})
+        result = parse_fn(file_path, project_id, user_id)
+
+        _update_import_status(imported_file_id, 'completed', 100)
+        self.update_state(state='SUCCESS', meta={'progress': 100})
+
+        # 导入后自动触发分析重算
+        try:
+            from app.services.analysis_service import recalc_project_analysis
+            from app.services.pl_service import recompute_project_pl
+            recalc_project_analysis(project_id)
+            recompute_project_pl(project_id)
+        except Exception as e:
+            current_app.logger.warning(f"分析重算失败: {e}")
+
+        return {
+            'status': 'completed',
+            'records_count': result.get('count', 0) if result else 0,
+        }
+
+    except Exception as exc:
+        error_msg = str(exc)
+        _update_import_status(imported_file_id, 'failed', 0, error_msg)
+        if self.request.retries < self.max_retries:
+            self.update_state(state='RETRY', meta={'progress': 0, 'error': error_msg})
+            raise self.retry(exc=exc)
+        self.update_state(state='FAILURE', meta={'progress': 0, 'error': error_msg})
+        raise

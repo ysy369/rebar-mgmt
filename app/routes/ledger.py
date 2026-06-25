@@ -1,11 +1,11 @@
 """钢筋台账统一蓝图：进场/调拨/措施筋/盘点/废料/形象进度"""
 import os
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import extract, func
 from app import db
-from app.models import Project, Incoming, Transfer, MeasureRebar, Inventory, Waste
+from app.models import Project, Incoming, Transfer, MeasureRebar, Inventory, Waste, ImportedFile
 from app.models.bom import Building as Bldg, Floor, Area, Component, RebarDetail
 from app.services.pagination_service import paginate, get_page
 
@@ -27,45 +27,109 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "led
 @ledger_bp.route("/<int:project_id>/import/<dtype>", methods=["GET", "POST"])
 @login_required
 def import_data(project_id, dtype, active_menu="file_management", active_submenu=None):
-    """通用导入入口：incoming/transfer/measure/inventory/waste"""
-    from app.services.ledger_import import IMPORTERS, save_upload, ALLOWED_EXT as ALLOWED
+    """通用导入入口：incoming/transfer/measure/inventory/waste + 扩展类型"""
+    from app.services.ledger_import import (
+        IMPORTERS, save_upload, ALLOWED_EXT as ALLOWED,
+        process_excel_import, DTYPE_TO_LEDGER_TYPE,
+    )
+    from app.routes.project import SHEET_LEDGER_MAP
+
+    # 支持的台账类型（含占位类型）
+    SUPPORTED_DTYPES = set(IMPORTERS.keys()) | {'detailing', 'non_budget', 'pile_foundation', 'support_structure'}
+    REVERSE_SHEET_MAP = {v: k for k, v in SHEET_LEDGER_MAP.items()}
 
     p = get_project(project_id)
-    if dtype not in IMPORTERS:
+    if dtype not in SUPPORTED_DTYPES:
         flash("不支持的数据类型。", "danger")
         return redirect(url_for("project.list"))
 
     if request.method == "POST":
         file = request.files.get("file")
         if not file or not file.filename:
-            flash("请选择文件。", "warning")
+            msg = "请选择文件。"
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "warning")
             return redirect(url_for("ledger.import_data", project_id=project_id, dtype=dtype))
 
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in ALLOWED:
-            flash("仅支持 .xlsx/.xls 文件。", "danger")
+            msg = "仅支持 .xlsx/.xls 文件。"
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 400
+            flash(msg, "danger")
             return redirect(url_for("ledger.import_data", project_id=project_id, dtype=dtype))
 
         try:
+            # 保存文件
             path = save_upload(file, os.path.join(UPLOAD_DIR, dtype))
-            success, failed = IMPORTERS[dtype](path, project_id, current_user.id)
-            # 自动更新项目分析数据
-            from app.services.analysis_service import recalc_project_analysis
-            recalc_project_analysis(project_id)
-            flash(f"导入完成：成功 {success} 条，失败 {failed} 条。数据已自动汇总到看板。", "success")
+
+            # 创建 ImportedFile 记录（使用标准 ledger_type）
+            ledger_type = DTYPE_TO_LEDGER_TYPE.get(dtype, dtype)
+            imported = ImportedFile(
+                project_id=project_id,
+                ledger_type=ledger_type,
+                original_filename=file.filename,
+                file_path=path,
+                file_size=os.path.getsize(path),
+                uploaded_by=current_user.id,
+                status="pending",
+                progress=0,
+            )
+            db.session.add(imported)
+            db.session.commit()
+
+            # 异步投递 Celery 任务
+            task = process_excel_import.delay(project_id, path, dtype, imported.id, current_user.id)
+
+            # 回写 task_id
+            imported.task_id = task.id
+            db.session.commit()
+
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({
+                    "task_id": task.id,
+                    "imported_file_id": imported.id,
+                    "filename": file.filename,
+                    "status": "pending",
+                })
+
+            flash(f"文件《{file.filename}》已提交，正在后台处理...", "info")
         except Exception as e:
-            flash(f"导入失败：{e}", "danger")
-        return redirect(url_for(f"ledger.{dtype}_list", project_id=project_id))
+            msg = f"提交失败：{e}"
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"error": msg}), 500
+            flash(msg, "danger")
+
+        # 非 AJAX 回退：重定向到列表页或 sheet 页
+        if dtype in IMPORTERS:
+            return redirect(url_for(f"ledger.{dtype}_list", project_id=project_id))
+        else:
+            sheet_view = REVERSE_SHEET_MAP.get(dtype)
+            if sheet_view:
+                return redirect(url_for(f"project.{sheet_view}"))
+            return redirect(url_for("project.dashboard"))
 
     labels = {
         'incoming': '进场台账', 'transfer': '调拨台账',
-        'measure': '措施筋台账', 'inventory': '盘点表', 'waste': '废料台账'
+        'measure': '措施筋台账', 'inventory': '盘点表', 'waste': '废料台账',
+        'detailing': '钢筋翻样表', 'non_budget': '非预算收入使用钢筋表',
+        'pile_foundation': '主体桩基表', 'support_structure': '基坑支护表',
     }
+
+    # 计算返回列表的 URL（5 种核心类型走 ledger 列表，扩展类型走 project sheet）
+    if dtype in IMPORTERS:
+        list_url = url_for(f"ledger.{dtype}_list", project_id=project_id)
+    else:
+        sheet_view = REVERSE_SHEET_MAP.get(dtype)
+        list_url = url_for(f"project.{sheet_view}") if sheet_view else url_for("project.dashboard")
+
     return render_template(
         "ledger/import.html",
         project=p,
         dtype=dtype,
         label=labels.get(dtype, dtype),
+        list_url=list_url,
         current_project=p,
         active_menu=active_menu,
         active_submenu=active_submenu or dtype,
