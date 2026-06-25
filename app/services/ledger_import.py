@@ -273,12 +273,7 @@ def _do_process_excel_import(self, project_id, file_path, dtype, imported_file_i
         _update_import_status(imported_file_id, 'processing', 0)
         self.update_state(state='PROGRESS', meta={'progress': 5})
 
-        # 检查文件是否存在
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"文件不存在: {file_path}")
-        self.update_state(state='PROGRESS', meta={'progress': 10})
-
-        # 未提供模板的四类台账：仅保存文件，不解析
+        # 未提供模板的四类台账：仅保存文件，跳过解析
         if dtype in ['detailing', 'non_budget', 'pile_foundation', 'support_structure']:
             _update_import_status(imported_file_id, 'completed', 100)
             self.update_state(state='SUCCESS', meta={'progress': 100})
@@ -287,6 +282,11 @@ def _do_process_excel_import(self, project_id, file_path, dtype, imported_file_i
                 'message': '该类型暂不支持解析，仅保存文件',
                 'records_count': 0,
             }
+
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+        self.update_state(state='PROGRESS', meta={'progress': 10})
 
         # 根据 dtype 调用对应解析函数
         parse_fn = _PARSE_FUNCTIONS.get(dtype)
@@ -313,6 +313,11 @@ def _do_process_excel_import(self, project_id, file_path, dtype, imported_file_i
             'records_count': result.get('count', 0) if result else 0,
         }
 
+    except FileNotFoundError:
+        error_msg = f"文件不存在: {file_path}"
+        _update_import_status(imported_file_id, 'failed', 0, error_msg)
+        self.update_state(state='FAILURE', meta={'progress': 0, 'error': error_msg})
+        return {'status': 'failed', 'error': error_msg}
     except Exception as exc:
         error_msg = str(exc)
         _update_import_status(imported_file_id, 'failed', 0, error_msg)
@@ -320,4 +325,4 @@ def _do_process_excel_import(self, project_id, file_path, dtype, imported_file_i
             self.update_state(state='RETRY', meta={'progress': 0, 'error': error_msg})
             raise self.retry(exc=exc)
         self.update_state(state='FAILURE', meta={'progress': 0, 'error': error_msg})
-        raise
+        return {'status': 'failed', 'error': error_msg}
