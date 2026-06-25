@@ -2,8 +2,14 @@
 # 钢筋精细化管理平台 — Celery 异步任务初始化
 # ============================================
 import os
+import sys
 from celery import Celery
 from celery.signals import worker_process_init
+
+# Celery Worker 子进程中 sys.path 可能不包含项目根目录，手动确保
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 # 模块级 Celery 实例（celery -A app.celery_app worker 命令需要）
 celery = Celery(
