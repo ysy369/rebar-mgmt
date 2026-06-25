@@ -573,6 +573,32 @@ def index():
         "efficiency_class": _kpi_status(all_stats["efficiency_rate"], "efficiency_rate")[1],
     }
 
+    # ===== 前期（上月）对比数据 =====
+    now = datetime.utcnow()
+    prev_month = now.month - 1 if now.month > 1 else 12
+    prev_year = now.year if now.month > 1 else now.year - 1
+    prev_from = datetime(prev_year, prev_month, 1)
+    if prev_month == 12:
+        prev_to = datetime(prev_year + 1, 1, 1) - timedelta(seconds=1)
+    else:
+        prev_to = datetime(prev_year, prev_month + 1, 1) - timedelta(seconds=1)
+
+    prev_stats = _calc_period_stats(project_ids, prev_from, prev_to)
+    material_prev = _calc_material_indices(project_ids, prev_from, prev_to)
+    prev_usage_ratio = (
+        prev_stats["usage_qty"] / prev_stats["contract_qty"]
+        if prev_stats["contract_qty"] > 0 else 0
+    )
+    prev_status = {
+        "usage_label": _kpi_status(prev_usage_ratio, "usage")[0],
+        "usage_class": _kpi_status(prev_usage_ratio, "usage")[1],
+        "loss_label": _kpi_status(prev_stats["loss_rate"], "loss_rate")[0],
+        "loss_class": _kpi_status(prev_stats["loss_rate"], "loss_rate")[1],
+        "efficiency_label": _kpi_status(prev_stats["efficiency_rate"], "efficiency_rate")[0],
+        "efficiency_class": _kpi_status(prev_stats["efficiency_rate"], "efficiency_rate")[1],
+    }
+    prev_label = f"{prev_year}年{prev_month}月"
+
     # ================= 改动3：顶部导航菜单路由 =================
     nav_menu = [
         {"name": "数据看板", "url": url_for("dashboard.index"), "active": True, "visible": True},
@@ -603,8 +629,15 @@ def index():
         all_status=all_status,
         material_selected=material_selected,
         material_all=_calc_material_indices(project_ids),
+        material_prev=material_prev,
         trend=trend,
         alerts=alerts,
+        all_dashboard_projects=Project.query.order_by(Project.name).all(),
+        selected_project_ids=request.args.getlist("project_ids", type=int),
+        prev_stats=prev_stats,
+        prev_status=prev_status,
+        prev_label=prev_label,
+        period_label_all=period_label,
         nav_menu=nav_menu,
         breadcrumbs=_bc(),
         page_title="数据看板",

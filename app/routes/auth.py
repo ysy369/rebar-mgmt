@@ -68,5 +68,9 @@ def logout():
 
 
 def redirect_to_dashboard():
-    """登录后统一跳转到首页"""
+    """登录后跳转：优先跟随 next 参数，否则到首页"""
+    from flask import request
+    next_url = request.args.get("next")
+    if next_url and next_url.startswith("/"):
+        return redirect(next_url)
     return redirect(url_for("home.index"))

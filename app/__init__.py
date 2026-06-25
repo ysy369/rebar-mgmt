@@ -350,7 +350,9 @@ def create_app(config_name=None):
     def index():
         if current_user.is_authenticated:
             return redirect(url_for("home.index"))
-        return redirect(url_for("auth.login"))
+        # 直接返回登录页内容，避免302重定向（curl/浏览器都能直接看到页面）
+        from app.routes.auth import login
+        return login()
 
     @app.route("/health")
     def health():
