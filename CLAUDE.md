@@ -423,18 +423,25 @@ def project_detail(project_id):
 
 `project_access_required` 从 `kwargs` 中取 `project_id` 或 `id`，调用 `can_access_project()` 查询 `UserProject` 关联表。
 
-### 8.12 面包屑 `_bc()` 约定
+### 8.12 面包屑规范（Breadcrumb）
 
-每个蓝图文件顶部都有一个**同名的本地函数** `_bc(*items)`，用于构建面包屑导航：
+#### 规则
+- 所有 Blueprint 中的 `_bc()` 函数必须统一从 `app/utils/breadcrumb.py` 导入
+- 禁止在单个 Blueprint 内重新定义 `_bc()`
+- 新增 Blueprint 时，文件顶部固定写入：`from app.utils.breadcrumb import make_breadcrumb as _bc`
 
-```python
-def _bc(*items):
-    base = [{"name": "钢筋管理平台", "url": url_for("home.index")}]
-    base.extend(items)
-    return base
-```
+#### 例外（过渡期）
+- 如果 `app/utils/breadcrumb.py` 尚未创建，允许临时在 Blueprint 内定义，但必须在函数上方加注释：`# TODO: 迁移至 app/utils/breadcrumb.py`
+- 修改根节点链接前，先执行 `grep -r "def _bc\(" app/` 确认全量替换范围
 
-所有 `render_template` 调用都传入 `breadcrumbs=_bc({"name": "xxx"}, ...)`，由 `base.html` 中的 `render_breadcrumb` 宏统一渲染。
+#### 重构触发条件
+当以下任一情况发生时，必须优先重构抽离：
+1. 需要修改面包屑根节点链接
+2. 新增第 3 个及以上 Blueprint 重复定义 `_bc()`
+3. 项目进入 Milestone 2（或具体节点）
+
+#### 完成后
+重构完成后，删除本段规则中的「例外」小节。
 
 ### 8.13 菜单高亮透传（`active_menu` / `active_submenu`）
 
