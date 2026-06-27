@@ -109,6 +109,8 @@
                                    class="{% if ep == 'audit.data_dynamic' %}active{% endif %}">数据动态管理分析</a></li>
                             <li><a href="{{ url_for('audit.procurement_plan') }}"
                                    class="{% if ep == 'audit.procurement_plan' %}active{% endif %}">钢筋采购计划</a></li>
+                            <li><a href="{{ url_for('audit.cutting_order_audit') }}"
+                                   class="{% if ep == 'audit.cutting_order_audit' %}active{% endif %}">料单审核台账</a></li>
                             <li class="menu-group {% if active_menu == 'audit_comparison' %}expanded active{% endif %}"
                                 data-menu-key="audit_comparison">
                                 <div class="menu-toggle" onclick="toggleMenu(this)">

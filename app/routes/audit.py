@@ -51,6 +51,18 @@ def procurement_plan():
     )
 
 
+@audit_bp.route("/cutting-order-audit")
+@login_required
+def cutting_order_audit():
+    return render_template(
+        "audit/cutting_order_audit.html",
+        active_menu="audit",
+        active_submenu="cutting_order_audit",
+        breadcrumbs=_bc({"name": "审核与分析", "url": None}, {"name": "料单审核台账", "url": None}),
+        page_title="料单审核台账",
+    )
+
+
 @audit_bp.route("/comparison-calc")
 @login_required
 def comparison_calc():
