@@ -111,6 +111,8 @@
                                    class="{% if ep == 'audit.procurement_plan' %}active{% endif %}">钢筋采购计划</a></li>
                             <li><a href="{{ url_for('audit.cutting_order_audit') }}"
                                    class="{% if ep == 'audit.cutting_order_audit' %}active{% endif %}">料单审核台账</a></li>
+                            <li><a href="{{ url_for('audit.cross_project_compare') }}"
+                                   class="{% if ep == 'audit.cross_project_compare' %}active{% endif %}">多项目横向对比</a></li>
                             <li class="menu-group {% if active_menu == 'audit_comparison' %}expanded active{% endif %}"
                                 data-menu-key="audit_comparison">
                                 <div class="menu-toggle" onclick="toggleMenu(this)">

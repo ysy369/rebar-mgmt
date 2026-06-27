@@ -63,6 +63,18 @@ def cutting_order_audit():
     )
 
 
+@audit_bp.route("/cross-project-compare")
+@login_required
+def cross_project_compare():
+    return render_template(
+        "audit/cross_project_compare.html",
+        active_menu="audit",
+        active_submenu="cross_project_compare",
+        breadcrumbs=_bc({"name": "审核与分析", "url": None}, {"name": "多项目横向对比", "url": None}),
+        page_title="多项目横向对比",
+    )
+
+
 @audit_bp.route("/comparison-calc")
 @login_required
 def comparison_calc():
